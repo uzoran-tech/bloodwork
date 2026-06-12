@@ -7,8 +7,10 @@
 import { MARKERS } from './catalog.js'
 
 export async function extractPdfLines(file) {
-  const pdfjs = await import('pdfjs-dist')
-  const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+  // The legacy build supports several Safari/iOS versions back; the modern
+  // build needs the very latest browsers and fails opaquely on older ones.
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  const worker = await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default
   const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise
   const lines = []
