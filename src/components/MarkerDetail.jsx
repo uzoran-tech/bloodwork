@@ -12,6 +12,7 @@ export default function MarkerDetail({ markerId, reports, onClose }) {
   const values = s.map((p) => p.value)
   const min = Math.min(...values)
   const max = Math.max(...values)
+  const avg = values.reduce((t, v) => t + v, 0) / values.length
   const first = s[0]
   const delta = s.length > 1 && first.value !== 0 ? ((latest.value - first.value) / Math.abs(first.value)) * 100 : null
 
@@ -31,30 +32,44 @@ export default function MarkerDetail({ markerId, reports, onClose }) {
           </button>
         </div>
 
+        <div className="sheet-reading">
+          <div>
+            <div className="big-value">
+              {latest.value} <small>{m.unit}</small>
+            </div>
+            <span className="muted">Last reading · {latest.date}</span>
+          </div>
+          <span className={`badge ${statusOf(m, latest.value)}`}>{statusOf(m, latest.value)}</span>
+        </div>
+
         <TrendChart series={s} marker={m} />
 
         <div className="stat-row">
           <div className="stat-card">
-            <strong>
-              {latest.value} <small>{m.unit}</small>
-            </strong>
-            <span className={`badge ${statusOf(m, latest.value)}`}>{statusOf(m, latest.value)}</span>
+            <span className="stat-label">Avg</span>
+            <strong>{avg.toFixed(avg >= 100 ? 0 : 1)}</strong>
+            <span className="stat-unit">{m.unit}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Max</span>
+            <strong>{max}</strong>
+            <span className="stat-unit">{m.unit}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Min</span>
+            <strong>{min}</strong>
+            <span className="stat-unit">{m.unit}</span>
           </div>
           {delta != null && (
             <div className="stat-card">
+              <span className="stat-label">All-time</span>
               <strong>
                 {delta > 0 ? '+' : ''}
                 {delta.toFixed(0)}%
               </strong>
-              <span className="muted">since first test</span>
+              <span className="stat-unit">vs first test</span>
             </div>
           )}
-          <div className="stat-card">
-            <strong>
-              {min}–{max}
-            </strong>
-            <span className="muted">all-time span</span>
-          </div>
         </div>
 
         {INFO[m.id] && (

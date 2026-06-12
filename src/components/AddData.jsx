@@ -143,7 +143,7 @@ export default function AddData({ reports, setReports, done }) {
   if (preview) {
     const entries = Object.entries(preview.values)
     return (
-      <div className="add-data">
+      <div className="add-data pad">
         <h3>📄 Review before saving</h3>
         <p className="muted">
           {preview.source === 'photo'
@@ -201,7 +201,7 @@ export default function AddData({ reports, setReports, done }) {
   }
 
   return (
-    <div className="add-data">
+    <div className="add-data pad">
       <div className="seg">
         <button className={mode === 'form' ? 'active' : ''} onClick={() => setMode('form')}>
           ✏️ Manually

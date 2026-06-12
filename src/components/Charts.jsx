@@ -19,14 +19,14 @@ function scale(series, marker, w, h, pad) {
   return { x, y }
 }
 
-export function Sparkline({ series, marker, width = 120, height = 36 }) {
+export function Sparkline({ series, marker, width = 120, height = 36, className = '' }) {
   if (series.length === 0) return null
   const { x, y } = scale(series, marker, width, height, 4)
   const pts = series.map((p) => `${x(new Date(p.date).getTime()).toFixed(1)},${y(p.value).toFixed(1)}`)
   const last = series[series.length - 1]
   const color = COLORS[statusOf(marker, last.value)]
   return (
-    <svg width={width} height={height} className="sparkline" aria-hidden>
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={`sparkline ${className}`} aria-hidden>
       {marker.lo != null && marker.hi != null && (
         <rect x={0} y={y(marker.hi)} width={width} height={Math.max(0, y(marker.lo) - y(marker.hi))} fill="var(--band)" />
       )}
