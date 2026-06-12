@@ -4,6 +4,31 @@ import { INFO } from '../info.js'
 import { TrendChart } from './Charts.jsx'
 import { IconClose } from './Icons.jsx'
 
+// Where the latest value sits relative to the reference band, as a bar with a
+// dot — faster to read than comparing numbers. One-sided ranges get a soft
+// synthetic far bound just for positioning.
+function RangeBar({ m, value }) {
+  if (m.lo == null && m.hi == null) return null
+  const lo = m.lo ?? Math.min(value, m.hi) * 0.5
+  const hi = m.hi ?? Math.max(value, m.lo) * 1.5
+  const span = hi - lo || Math.abs(hi) || 1
+  const min = lo - span * 0.35
+  const max = hi + span * 0.35
+  const at = (v) => Math.max(1.5, Math.min(98.5, ((v - min) / (max - min)) * 100))
+  return (
+    <div className="range-bar">
+      <div className="range-track">
+        <div className="range-band" style={{ left: `${at(lo)}%`, width: `${at(hi) - at(lo)}%` }} />
+        <div className={`range-dot ${statusOf(m, value)}`} style={{ left: `${at(value)}%` }} />
+      </div>
+      <div className="range-labels">
+        <span>{m.lo != null ? `low < ${m.lo}` : ''}</span>
+        <span>{m.hi != null ? `high > ${m.hi}` : ''}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function MarkerDetail({ markerId, reports, onClose }) {
   const m = markerById(markerId)
   const s = seriesFor(reports, markerId)
@@ -41,6 +66,8 @@ export default function MarkerDetail({ markerId, reports, onClose }) {
           </div>
           <span className={`badge ${statusOf(m, latest.value)}`}>{statusOf(m, latest.value)}</span>
         </div>
+
+        <RangeBar m={m} value={latest.value} />
 
         <TrendChart series={s} marker={m} />
 
