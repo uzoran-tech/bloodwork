@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { trackedMarkers, seriesFor, buildInsights } from '../store.js'
-import { PANELS, statusOf } from '../catalog.js'
+import { PANELS, statusOf, midOf } from '../catalog.js'
 import { Sparkline } from './Charts.jsx'
 import { panelTint } from './Dashboard.jsx'
 
@@ -19,18 +19,30 @@ const pctChange = (s) => {
   return ((s[s.length - 1].value - prev) / Math.abs(prev)) * 100
 }
 
-const weeksSpan = (s) => {
+const spanLabel = (s) => {
   if (s.length < 2) return null
-  const ms = new Date(s[s.length - 1].date) - new Date(s[0].date)
-  return Math.max(1, Math.round(ms / (7 * 86400000)))
+  const w = Math.max(1, Math.round((new Date(s[s.length - 1].date) - new Date(s[0].date)) / (7 * 86400000)))
+  if (w < 10) return `${w}w`
+  if (w < 104) return `${Math.round(w / 4.33)}mo`
+  return `${w < 260 ? (w / 52).toFixed(1) : Math.round(w / 52)}y`
 }
 
-function Delta({ value }) {
+// Color encodes meaning, not direction: green when the change moves the value
+// toward mid-range, red when away — a rising "good" marker should look good.
+const deltaTone = (m, s) => {
+  if (s.length < 2) return 'flat'
+  const mid = midOf(m)
+  const latest = s[s.length - 1].value
+  const prev = s[s.length - 2].value
+  return Math.abs(latest - mid) <= Math.abs(prev - mid) ? 'good' : 'bad'
+}
+
+function Delta({ value, tone }) {
   if (value == null) return null
-  const cls = Math.abs(value) < 0.5 ? 'flat' : value > 0 ? 'up' : 'down'
-  const arrow = Math.abs(value) < 0.5 ? '·' : value > 0 ? '▲' : '▼'
+  const flat = Math.abs(value) < 0.5
+  const arrow = flat ? '·' : value > 0 ? '▲' : '▼'
   return (
-    <span className={`delta ${cls}`}>
+    <span className={`delta ${flat ? 'flat' : tone}`}>
       {arrow} {Math.abs(value).toFixed(1)}%
     </span>
   )
@@ -38,6 +50,7 @@ function Delta({ value }) {
 
 export default function Trends({ reports, onOpenMarker, initialPanel }) {
   const [panel, setPanel] = useState(initialPanel || 'ALL')
+  const [sevFilter, setSevFilter] = useState(null)
   const tracked = trackedMarkers(reports)
   const insights = buildInsights(reports)
 
@@ -76,7 +89,10 @@ export default function Trends({ reports, onOpenMarker, initialPanel }) {
     .filter((r) => Math.abs(r.delta) >= 5)
 
   const panels = PANELS.filter((p) => tracked.some((m) => m.panel === p))
-  const visible = rows.filter((r) => panel === 'ALL' || r.m.panel === panel)
+  const visible = rows.filter(
+    (r) => (panel === 'ALL' || r.m.panel === panel) && (!sevFilter || r.sev === sevFilter)
+  )
+  const toggleSev = (sev) => setSevFilter(sevFilter === sev ? null : sev)
 
   return (
     <div className="trends pad">
@@ -88,25 +104,33 @@ export default function Trends({ reports, onOpenMarker, initialPanel }) {
       </div>
 
       <div className="tally-row">
-        <div className="tally inrange">
-          <span className="tally-label">
-            <span className="dot" /> In range
-          </span>
-          <strong>{tally.inrange}</strong>
-        </div>
-        <div className="tally watch">
-          <span className="tally-label">
-            <span className="dot" /> Watch
-          </span>
-          <strong>{tally.watch}</strong>
-        </div>
-        <div className="tally action">
-          <span className="tally-label">
-            <span className="dot" /> Action
-          </span>
-          <strong>{tally.action}</strong>
-        </div>
+        {[
+          ['inrange', 'In range'],
+          ['watch', 'Watch'],
+          ['action', 'Action'],
+        ].map(([sev, label]) => (
+          <button
+            key={sev}
+            className={`tally ${sev} ${sevFilter === sev ? 'active' : ''}`}
+            onClick={() => toggleSev(sev)}
+            title={`Filter the list to ${label.toLowerCase()} markers`}
+          >
+            <span className="tally-label">
+              <span className="dot" /> {label}
+            </span>
+            <strong>{tally[sev]}</strong>
+          </button>
+        ))}
       </div>
+      {sevFilter && (
+        <p className="filter-hint">
+          Showing {visible.length} {sevFilter === 'inrange' ? 'in-range' : sevFilter} marker
+          {visible.length === 1 ? '' : 's'} —{' '}
+          <button className="section-link" onClick={() => setSevFilter(null)}>
+            clear filter
+          </button>
+        </p>
+      )}
 
       {focus && (
         <button className="focus-card" onClick={() => onOpenMarker(focus.m.id)}>
@@ -126,7 +150,7 @@ export default function Trends({ reports, onOpenMarker, initialPanel }) {
             <div className="focus-value">
               <strong>{focus.latest.value}</strong> <small>{focus.m.unit}</small>
               {focus.delta != null && Math.abs(focus.delta) >= 0.5 && (
-                <div className={`focus-delta ${focus.delta > 0 ? 'up' : 'down'}`}>
+                <div className={`focus-delta ${deltaTone(focus.m, focus.s)}`}>
                   {focus.delta > 0 ? '▲' : '▼'} {Math.abs(focus.delta).toFixed(1)}%
                 </div>
               )}
@@ -136,7 +160,7 @@ export default function Trends({ reports, onOpenMarker, initialPanel }) {
           {focusNote && (
             <div className="focus-note">
               <span className="insight-avatar">✨</span>
-              {focusNote.text}
+              {focusNote.text.charAt(0).toUpperCase() + focusNote.text.slice(1)}
             </div>
           )}
         </button>
@@ -162,8 +186,8 @@ export default function Trends({ reports, onOpenMarker, initialPanel }) {
                 </div>
                 <Sparkline series={r.s} marker={r.m} width={134} height={30} />
                 <div className="mover-foot">
-                  <Delta value={r.delta} />
-                  {weeksSpan(r.s) != null && <span className="span">{weeksSpan(r.s)}w</span>}
+                  <Delta value={r.delta} tone={deltaTone(r.m, r.s)} />
+                  {spanLabel(r.s) != null && <span className="span">{spanLabel(r.s)}</span>}
                 </div>
               </button>
             ))}
@@ -193,7 +217,7 @@ export default function Trends({ reports, onOpenMarker, initialPanel }) {
             onClick={() => onOpenMarker(r.m.id)}
           >
             <span className={`marker-chip ${panelTint(r.m.panel)}`}>
-              {r.m.name.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase()}
+              <Sparkline series={r.s.slice(-8)} marker={r.m} width={36} height={20} />
             </span>
             <span className="marker-row-main">
               <span className="marker-row-name">
@@ -206,7 +230,7 @@ export default function Trends({ reports, onOpenMarker, initialPanel }) {
             </span>
             <span className="marker-row-val">
               <strong>{r.latest.value}</strong>
-              <Delta value={r.delta} />
+              <Delta value={r.delta} tone={deltaTone(r.m, r.s)} />
             </span>
           </button>
         ))}

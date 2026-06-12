@@ -99,6 +99,8 @@ export function toCSV(reports) {
 
 // ---- Insights (rule-based, descriptive only — not medical advice) ----
 
+// Each insight: { tone, markerId, title (marker name), text (short phrase
+// WITHOUT the name — UIs render the title bold, so items scan fast) }.
 export function buildInsights(reports) {
   const insights = []
   for (const m of trackedMarkers(reports)) {
@@ -111,7 +113,8 @@ export function buildInsights(reports) {
       insights.push({
         tone: 'warn',
         markerId: m.id,
-        text: `${m.name} is ${st === 'high' ? 'above' : 'below'} the reference range (${latest.value} ${m.unit}).`,
+        title: m.name,
+        text: `${st === 'high' ? 'above' : 'below'} the reference range at ${latest.value} ${m.unit}.`,
       })
     }
 
@@ -122,7 +125,8 @@ export function buildInsights(reports) {
         insights.push({
           tone: 'good',
           markerId: m.id,
-          text: `${m.name} moved back into range (${prev.value} → ${latest.value} ${m.unit}).`,
+          title: m.name,
+          text: `back in range (${prev.value} → ${latest.value} ${m.unit}).`,
         })
       } else if (prev.value !== 0) {
         const pct = ((latest.value - prev.value) / Math.abs(prev.value)) * 100
@@ -131,7 +135,8 @@ export function buildInsights(reports) {
           insights.push({
             tone: towardMid ? 'good' : st === 'normal' ? 'info' : 'warn',
             markerId: m.id,
-            text: `${m.name} ${pct > 0 ? 'rose' : 'fell'} ${Math.abs(pct).toFixed(0)}% since the previous test${towardMid ? ', moving toward mid-range' : ''}.`,
+            title: m.name,
+            text: `${pct > 0 ? 'rose' : 'fell'} ${Math.abs(pct).toFixed(0)}% since the previous test${towardMid ? ', moving toward mid-range' : ''}.`,
           })
         }
       }
@@ -146,7 +151,8 @@ export function buildInsights(reports) {
         insights.push({
           tone: 'info',
           markerId: m.id,
-          text: `Long-term, ${m.name} averages ${b > a ? 'higher' : 'lower'} in recent tests (${a.toFixed(1)} → ${b.toFixed(1)} ${m.unit}).`,
+          title: m.name,
+          text: `averages ${b > a ? 'higher' : 'lower'} lately (${a.toFixed(1)} → ${b.toFixed(1)} ${m.unit}).`,
         })
       }
     }

@@ -5,6 +5,8 @@ import { PANELS, PANEL_ICONS, statusOf } from '../catalog.js'
 const TINTS = ['t-rose', 't-teal', 't-lav', 't-amber', 't-blue']
 export const panelTint = (panel) => TINTS[PANELS.indexOf(panel) % TINTS.length]
 
+const TONE_ICONS = { warn: '▲', good: '✓', info: '→' }
+
 function greeting() {
   const h = new Date().getHours()
   if (h < 12) return 'Good morning'
@@ -12,13 +14,18 @@ function greeting() {
   return 'Good evening'
 }
 
+const fmtDate = (d) =>
+  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
 export default function Dashboard({ reports, onOpenMarker, onOpenPanel, theme, onToggleTheme }) {
   const { inRange, total, flags } = rangeStats(reports)
   const insights = buildInsights(reports)
   const pct = total ? Math.round((inRange / total) * 100) : 0
+  const [allInsights, setAllInsights] = useState(false)
 
   // Same score computed without the newest report = "vs last test".
   const sorted = sortByDate(reports)
+  const latest = sorted[sorted.length - 1]
   let delta = null
   if (sorted.length > 1) {
     const prev = rangeStats(sorted.slice(0, -1))
@@ -42,15 +49,16 @@ export default function Dashboard({ reports, onOpenMarker, onOpenPanel, theme, o
   const panels = PANELS.map((panel) => {
     const markers = tracked.filter((m) => m.panel === panel)
     if (markers.length === 0) return null
-    let status = 'good'
+    let ok = 0
     for (const m of markers) {
       const s = seriesFor(reports, m.id)
-      if (s.length && statusOf(m, s[s.length - 1].value) !== 'normal') status = 'attention'
+      if (s.length && statusOf(m, s[s.length - 1].value) === 'normal') ok += 1
     }
-    return { panel, count: markers.length, status }
+    return { panel, count: markers.length, ok }
   }).filter(Boolean)
 
-  const topInsight = insights[0]
+  const [featured, ...rest] = insights
+  const shownRest = allInsights ? rest : rest.slice(0, 3)
 
   return (
     <div className="dashboard">
@@ -85,6 +93,9 @@ export default function Dashboard({ reports, onOpenMarker, onOpenPanel, theme, o
                 </span>
               )}
             </div>
+            <div className="score-meta">
+              <span>Last test · {fmtDate(latest.date)}</span>
+            </div>
           </div>
           <div className="ring" style={{ '--pct': shownPct }}>
             <span>
@@ -95,65 +106,11 @@ export default function Dashboard({ reports, onOpenMarker, onOpenPanel, theme, o
       </div>
 
       <div className="pad">
-        <div className="section-head">
-          <strong>Health categories</strong>
-          <button className="section-link" onClick={() => onOpenPanel(null)}>
-            See all
-          </button>
-        </div>
-        <div className="cat-grid">
-          {panels.map((p, i) => (
-            <button
-              key={p.panel}
-              className={`cat-card ${panelTint(p.panel)}`}
-              style={{ animationDelay: `${i * 50}ms` }}
-              onClick={() => onOpenPanel(p.panel)}
-            >
-              <span className="cat-icon">{PANEL_ICONS[p.panel]}</span>
-              <span>
-                <strong>{p.panel}</strong>
-                <span className="cat-status">{p.status === 'good' ? 'Good' : 'Attention'}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {topInsight && (
-          <>
-            <div className="section-head">
-              <strong>Insight</strong>
-            </div>
-            <div className="insight-hero" onClick={() => onOpenMarker(topInsight.markerId)}>
-              <span className="insight-avatar">✨</span>
-              <div>
-                <div className="insight-hero-head">
-                  <strong>BloodTrack · Insight</strong>
-                  <span className="badge new">New</span>
-                </div>
-                <p>{topInsight.text}</p>
-                <span className="open-link">Open marker →</span>
-              </div>
-            </div>
-          </>
-        )}
-
-        {insights.length > 1 && (
-          <ul className="insight-list" style={{ marginTop: 10 }}>
-            {insights.slice(1, 7).map((ins, i) => (
-              <li key={i} className={`insight ${ins.tone}`} onClick={() => onOpenMarker(ins.markerId)}>
-                {ins.text}
-              </li>
-            ))}
-          </ul>
-        )}
-
         {flags.length > 0 && (
           <>
             <div className="section-head">
               <strong>Needs attention</strong>
-              <button className="section-link" onClick={() => onOpenPanel(null)}>
-                View all
-              </button>
+              <span className="count-pill">{flags.length}</span>
             </div>
             <div className="flag-list">
               {flags.map((f) => (
@@ -175,6 +132,74 @@ export default function Dashboard({ reports, onOpenMarker, onOpenPanel, theme, o
             </div>
           </>
         )}
+
+        {featured && (
+          <>
+            <div className="section-head">
+              <strong>Insights</strong>
+              <span className="count-pill">{insights.length}</span>
+            </div>
+            <div className="insight-hero" onClick={() => onOpenMarker(featured.markerId)}>
+              <span className="insight-avatar">✨</span>
+              <div>
+                <div className="insight-hero-head">
+                  <strong>{featured.title}</strong>
+                  <span className={`badge ${featured.tone === 'warn' ? 'attention' : featured.tone === 'good' ? 'good' : 'low'}`}>
+                    {featured.tone === 'warn' ? 'watch' : featured.tone === 'good' ? 'improved' : 'trend'}
+                  </span>
+                </div>
+                <p>{featured.text.charAt(0).toUpperCase() + featured.text.slice(1)}</p>
+                <span className="open-link">Open marker →</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {rest.length > 0 && (
+          <>
+            <ul className="insight-list" style={{ marginTop: 10 }}>
+              {shownRest.map((ins, i) => (
+                <li key={i} className={`insight ${ins.tone}`} onClick={() => onOpenMarker(ins.markerId)}>
+                  <span className={`insight-ico ${ins.tone}`}>{TONE_ICONS[ins.tone]}</span>
+                  <span className="insight-text">
+                    <strong>{ins.title}</strong> {ins.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {rest.length > 3 && (
+              <button className="show-all" onClick={() => setAllInsights(!allInsights)}>
+                {allInsights ? 'Show less' : `Show all ${rest.length} insights`}
+              </button>
+            )}
+          </>
+        )}
+
+        <div className="section-head">
+          <strong>Health categories</strong>
+          <button className="section-link" onClick={() => onOpenPanel(null)}>
+            See all
+          </button>
+        </div>
+        <div className="cat-grid">
+          {panels.map((p, i) => (
+            <button
+              key={p.panel}
+              className={`cat-card ${panelTint(p.panel)}`}
+              style={{ animationDelay: `${i * 50}ms` }}
+              onClick={() => onOpenPanel(p.panel)}
+            >
+              <span className="cat-icon">{PANEL_ICONS[p.panel]}</span>
+              <span>
+                <strong>{p.panel}</strong>
+                <span className="cat-status">{p.ok === p.count ? 'Good' : 'Attention'}</span>
+                <span className="cat-sub">
+                  {p.ok}/{p.count} in range
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
 
         <p className="disclaimer">
           Reference ranges are general adult values; your lab's printed range takes precedence. This

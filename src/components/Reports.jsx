@@ -8,6 +8,21 @@ const DOC_TINTS = ['t-lav', 't-rose', 't-teal', 't-amber', 't-blue']
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 
+function relDate(d) {
+  const days = Math.round((Date.now() - new Date(d)) / 86400000)
+  if (days <= 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 30) return `${days} days ago`
+  if (days < 365) return `${Math.round(days / 30)} mo ago`
+  return `${(days / 365).toFixed(days < 730 ? 1 : 0)} yr ago`
+}
+
+function sourceIcon(notes) {
+  if (/\.pdf/i.test(notes || '')) return '📄'
+  if (/photo|\.(jpe?g|png|heic|webp)/i.test(notes || '')) return '📷'
+  return '🧪'
+}
+
 export default function Reports({ reports, setReports, onAdd, theme, onToggleTheme }) {
   const [open, setOpen] = useState(null)
   const sorted = sortByDate(reports).reverse()
@@ -78,12 +93,14 @@ export default function Reports({ reports, setReports, onAdd, theme, onToggleThe
           return (
             <div key={r.id} className="report-card">
               <button className="report-head" onClick={() => setOpen(isOpen ? null : r.id)}>
-                <span className={`report-doc ${DOC_TINTS[i % DOC_TINTS.length]}`}>📄</span>
+                <span className={`report-doc ${DOC_TINTS[i % DOC_TINTS.length]}`}>{sourceIcon(r.notes)}</span>
                 <span style={{ minWidth: 0 }}>
                   <span className="report-title">
                     <strong>{r.lab || 'Lab report'}</strong>
                   </span>
-                  <span className="report-sub">{fmtDate(r.date)}</span>
+                  <span className="report-sub">
+                    {fmtDate(r.date)} · {relDate(r.date)}
+                  </span>
                   <span className="report-foot">
                     {entries.length} markers
                     <span className="dot-strip">
