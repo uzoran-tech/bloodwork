@@ -6,7 +6,7 @@ export const MARKERS = [
   // Hormones
   { id: 'tsh', name: 'TSH', unit: 'µIU/mL', panel: 'Hormones', lo: 0.35, hi: 4.94, aliases: ['hstsh', 'thyroid stimulating hormone'] },
   { id: 'ft4', name: 'Free T4', unit: 'pmol/L', panel: 'Hormones', lo: 9.0, hi: 19.1, aliases: ['slobodni t4', 'free thyroxine', 'ft4'] },
-  { id: 'ft3', name: 'Free T3', unit: 'pmol/L', panel: 'Hormones', lo: 2.9, hi: 6.8, aliases: ['slobodni t3'] },
+  { id: 'ft3', name: 'Free T3', unit: 'pmol/L', panel: 'Hormones', lo: 2.9, hi: 6.8, aliases: ['slobodni t3', 'ft3'] },
   { id: 'testosterone', name: 'Testosterone (total)', unit: 'nmol/L', panel: 'Hormones', lo: 7.66, hi: 24.82, aliases: ['testosteron', 'testosteron uk', 'total testosterone'] },
   { id: 'estradiol', name: 'Estradiol', unit: 'pg/mL', panel: 'Hormones', lo: null, hi: 56, aliases: ['e2'] },
   { id: 'freetesto', name: 'Testosterone (free)', unit: 'pg/mL', panel: 'Hormones', lo: 2.15, hi: 16.5, aliases: ['free testosteron', 'slobodni testosteron'] },

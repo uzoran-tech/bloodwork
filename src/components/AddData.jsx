@@ -68,22 +68,37 @@ export default function AddData({ reports, setReports, done }) {
       const { extractPdfLines, parseLabLines } = await import('../pdfimport.js')
       const lines = await extractPdfLines(f)
       const { date: d, values } = parseLabLines(lines)
-      if (!d || Object.keys(values).length === 0) {
+      if (Object.keys(values).length > 0) {
+        setPreview({ date: d || '', values, fileName: f.name })
+      } else if (lines.length === 0) {
         setFeedback({
           tone: 'warn',
-          text: 'Could not read results from this PDF (it may be a scan without a text layer). Try CSV or manual entry — or send the PDF to your assistant to convert.',
+          text: 'This PDF has no selectable text — it is probably a scan or photo. Try CSV or manual entry — or send the PDF to your assistant to convert.',
         })
       } else {
-        setPreview({ date: d, values, fileName: f.name })
+        setFeedback({
+          tone: 'warn',
+          text: 'Read the PDF but did not recognize any marker values in it. Try CSV or manual entry — or send the PDF to your assistant to convert.',
+        })
       }
-    } catch {
-      setFeedback({ tone: 'warn', text: 'Failed to read that PDF. Try CSV or manual entry instead.' })
+    } catch (err) {
+      const name = err?.name || ''
+      let text
+      if (name === 'PasswordException') {
+        text = 'This PDF is password-protected. Save an unlocked copy (e.g. open it and print/share as PDF) and try again.'
+      } else if (name === 'InvalidPDFException') {
+        text = 'That file does not look like a valid PDF. Re-download it and try again.'
+      } else {
+        text = `Failed to read that PDF${err?.message ? ` (${err.message})` : ''}. Try CSV or manual entry instead.`
+      }
+      setFeedback({ tone: 'warn', text })
     } finally {
       setBusy(false)
     }
   }
 
   function confirmPreview() {
+    if (!preview.date) return setFeedback({ tone: 'warn', text: 'Pick the test date first.' })
     setReports(mergeReport(reports, { date: preview.date, lab: '', notes: `Imported from ${preview.fileName}`, values: preview.values }))
     setFeedback({ tone: 'good', text: `Saved ${Object.keys(preview.values).length} values for ${preview.date}.` })
     setPreview(null)
@@ -102,6 +117,7 @@ export default function AddData({ reports, setReports, done }) {
           Test date
           <input type="date" value={preview.date} onChange={(e) => setPreview({ ...preview, date: e.target.value })} />
         </label>
+        {!preview.date && <p className="feedback warn">Could not find the test date in the PDF — pick it above before saving.</p>}
         <table className="history preview-table">
           <tbody>
             {entries.map(([id, v]) => {
@@ -132,7 +148,7 @@ export default function AddData({ reports, setReports, done }) {
           </tbody>
         </table>
         <div className="report-actions">
-          <button className="btn primary" onClick={confirmPreview} disabled={entries.length === 0}>
+          <button className="btn primary" onClick={confirmPreview} disabled={entries.length === 0 || !preview.date}>
             Save {entries.length} values
           </button>
           <button className="btn ghost" onClick={() => setPreview(null)}>
