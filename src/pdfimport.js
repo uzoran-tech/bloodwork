@@ -16,8 +16,16 @@ export async function extractPdfLines(file) {
   const lines = []
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p)
-    const content = await page.getTextContent()
-    const items = content.items
+    // page.getTextContent() async-iterates a ReadableStream internally, which
+    // Safari/WebKit doesn't support — read the stream manually instead.
+    const reader = page.streamTextContent().getReader()
+    const rawItems = []
+    for (;;) {
+      const { value, done } = await reader.read()
+      if (done) break
+      rawItems.push(...value.items)
+    }
+    const items = rawItems
       .filter((it) => it.str && it.str.trim())
       .map((it) => ({ str: it.str, x: it.transform[4], y: it.transform[5] }))
       .sort((a, b) => b.y - a.y || a.x - b.x)
