@@ -107,24 +107,50 @@ function extractValue(line) {
   return isFinite(v) ? v : null
 }
 
-export function parseLabLines(lines) {
-  let date = null
+const DATE_RE = /(\d{1,2})[./](\d{1,2})[./](\d{4})/
+// "Datum rođenja" (also OCR'd/typed as rodjenja/rodenja), birth, JMBG — these
+// lines carry the patient's birth date, never the sample date.
+const BIRTH_RE = /ro[dđ]j?enj|birth|jmbg/i
+const SAMPLING_RE = /uzork|uzimanj|sample|collect/i
+
+const fmtDate = (m) => `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+
+// Header rows often merge into one line ("Datum rođenja: 15.03.1978 ...
+// Datum uzorkovanja: 10.06.2026"), so when a sampling keyword is present,
+// take the date closest AFTER it rather than the first date on the line.
+function dateNearKeyword(line, kwRe) {
+  const kw = line.search(kwRe)
+  if (kw === -1) return null
+  let best = null
+  let bestDist = Infinity
+  for (const m of line.matchAll(new RegExp(DATE_RE.source, 'g'))) {
+    const dist = m.index >= kw ? m.index - kw : kw - m.index + 10000
+    if (dist < bestDist) {
+      bestDist = dist
+      best = m
+    }
+  }
+  return best
+}
+
+function findReportDate(lines) {
   for (const l of lines) {
-    const m = l.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})/)
-    if (m && /uzork|uzimanj|datum|date|sample|collect/i.test(l)) {
-      date = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
-      break
-    }
+    const m = dateNearKeyword(l, SAMPLING_RE)
+    if (m && (m.index >= l.search(SAMPLING_RE) || !BIRTH_RE.test(l))) return fmtDate(m)
   }
-  if (!date) {
-    for (const l of lines) {
-      const m = l.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})/)
-      if (m) {
-        date = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
-        break
-      }
-    }
+  for (const l of lines) {
+    const m = l.match(DATE_RE)
+    if (m && /datum|date/i.test(l) && !BIRTH_RE.test(l)) return fmtDate(m)
   }
+  for (const l of lines) {
+    const m = l.match(DATE_RE)
+    if (m && !BIRTH_RE.test(l)) return fmtDate(m)
+  }
+  return null
+}
+
+export function parseLabLines(lines) {
+  const date = findReportDate(lines)
 
   const values = {}
   for (const line of lines) {
