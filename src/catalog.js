@@ -20,7 +20,7 @@ export const MARKERS = [
   { id: 'b12', name: 'Vitamin B12', unit: 'pg/mL', panel: 'Vitamins & Minerals', lo: 197, hi: 771, aliases: ['vitamin b12', 'cobalamin'] },
   { id: 'folate', name: 'Folate', unit: 'ng/mL', panel: 'Vitamins & Minerals', lo: 3.9, hi: 26.8, aliases: ['folna kiselina', 'folic acid'] },
   { id: 'ferritin', name: 'Ferritin', unit: 'ng/mL', panel: 'Vitamins & Minerals', lo: 30, hi: 400, aliases: ['feritin'] },
-  { id: 'iron', name: 'Iron (serum)', unit: 'µmol/L', panel: 'Vitamins & Minerals', lo: 11.6, hi: 31.3, aliases: ['gvozdje', 'fe'] },
+  { id: 'iron', name: 'Iron (serum)', unit: 'µmol/L', panel: 'Vitamins & Minerals', lo: 11.6, hi: 31.3, aliases: ['gvozdje', 'gvozde', 'fe'] },
   { id: 'zinc', name: 'Zinc', unit: 'µmol/L', panel: 'Vitamins & Minerals', lo: 7.0, hi: 23.0, aliases: ['cink', 'zn'] },
   { id: 'magnesium', name: 'Magnesium', unit: 'mmol/L', panel: 'Vitamins & Minerals', lo: 0.66, hi: 1.07, aliases: ['mg', 'magnezijum'] },
   // Metabolic

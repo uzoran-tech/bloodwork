@@ -11,8 +11,10 @@ export default function AddData({ reports, setReports, done }) {
   const [feedback, setFeedback] = useState(null)
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState(null) // { date, values, fileName }
+  const [ocrProgress, setOcrProgress] = useState(null) // 0..1 while reading a photo
   const csvRef = useRef(null)
   const pdfRef = useRef(null)
+  const photoRef = useRef(null)
 
   function setRow(i, patch) {
     setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)))
@@ -97,6 +99,39 @@ export default function AddData({ reports, setReports, done }) {
     }
   }
 
+  async function onPhotoFile(e) {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    setBusy(true)
+    setFeedback(null)
+    setOcrProgress(0)
+    try {
+      const [{ extractPhotoLines }, { parseLabLines }] = await Promise.all([
+        import('../photoimport.js'),
+        import('../pdfimport.js'),
+      ])
+      const lines = await extractPhotoLines(f, setOcrProgress)
+      const { date: d, values } = parseLabLines(lines)
+      if (Object.keys(values).length > 0) {
+        setPreview({ date: d || '', values, fileName: f.name || 'photo', source: 'photo' })
+      } else {
+        setFeedback({
+          tone: 'warn',
+          text: 'Could not recognize any marker values in that photo. Try a sharper, well-lit photo taken straight-on, with the values filling the frame.',
+        })
+      }
+    } catch (err) {
+      setFeedback({
+        tone: 'warn',
+        text: `Failed to read that photo${err?.message ? ` (${err.message})` : ''}. Try again with a sharper photo, or use CSV / manual entry.`,
+      })
+    } finally {
+      setBusy(false)
+      setOcrProgress(null)
+    }
+  }
+
   function confirmPreview() {
     if (!preview.date) return setFeedback({ tone: 'warn', text: 'Pick the test date first.' })
     setReports(mergeReport(reports, { date: preview.date, lab: '', notes: `Imported from ${preview.fileName}`, values: preview.values }))
@@ -111,7 +146,9 @@ export default function AddData({ reports, setReports, done }) {
       <div className="add-data">
         <h3>📄 Review before saving</h3>
         <p className="muted">
-          Read from <strong>{preview.fileName}</strong> — uncheck anything that looks wrong.
+          {preview.source === 'photo'
+            ? 'Read from your photo with on-device text recognition — OCR can misread decimals, so check each value against the paper. ⚠️ marks values that look implausible.'
+            : <>Read from <strong>{preview.fileName}</strong> — uncheck anything that looks wrong.</>}
         </p>
         <label className="form-inline">
           Test date
@@ -122,6 +159,9 @@ export default function AddData({ reports, setReports, done }) {
           <tbody>
             {entries.map(([id, v]) => {
               const m = markerById(id)
+              // Far outside any plausible range — usually OCR losing a decimal
+              // separator (2.58 read as 258). Flag it for a second look.
+              const suspect = (m.hi != null && v > m.hi * 5) || (m.lo != null && v < m.lo / 5)
               return (
                 <tr key={id}>
                   <td>
@@ -141,6 +181,7 @@ export default function AddData({ reports, setReports, done }) {
                   </td>
                   <td>
                     <span className={`badge ${statusOf(m, v)}`}>{statusOf(m, v)}</span>
+                    {suspect && <span title="Far outside the usual range — double-check against the report"> ⚠️</span>}
                   </td>
                 </tr>
               )
@@ -211,12 +252,19 @@ export default function AddData({ reports, setReports, done }) {
       ) : (
         <div className="form">
           <button className="btn primary" disabled={busy} onClick={() => pdfRef.current?.click()}>
-            {busy ? 'Reading PDF…' : '📄 Upload lab PDF'}
+            {busy && ocrProgress == null ? 'Reading PDF…' : '📄 Upload lab PDF'}
           </button>
           <input ref={pdfRef} type="file" accept=".pdf,application/pdf" hidden onChange={onPdfFile} />
+          <button className="btn primary" disabled={busy} onClick={() => photoRef.current?.click()}>
+            {ocrProgress != null
+              ? `Reading photo… ${Math.round(ocrProgress * 100)}%`
+              : '📷 Scan a photo'}
+          </button>
+          <input ref={photoRef} type="file" accept="image/*" hidden onChange={onPhotoFile} />
           <p className="muted">
-            Works with lab PDFs that contain selectable text (like MEDLAB reports). You'll review
-            every value before it's saved. Scanned photos aren't supported yet — use CSV below.
+            PDFs with selectable text (like MEDLAB reports) read instantly. For paper reports, take
+            a photo — sharp, straight-on, good light — and it's read on your device (needs internet
+            the first time to fetch the reader). You'll review every value before it's saved.
           </p>
           <hr className="rule" />
           <p className="muted">

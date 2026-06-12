@@ -14,10 +14,10 @@ the browser's local storage and never leave your phone.
   significant changes, long-term averages).
 - **Trends** — every marker grouped by panel with sparklines; tap one for a
   full chart with its reference band, change-over-time stats, and history.
-- **Add results three ways** — manual entry, CSV import (English or Serbian
-  marker names; `2024-06-10` or `10.06.2024` dates), or **PDF upload** that
-  reads the text layer of lab reports and lets you review every value before
-  saving.
+- **Add results four ways** — manual entry, CSV import (English or Serbian
+  marker names; `2024-06-10` or `10.06.2024` dates), **PDF upload** that
+  reads the text layer of lab reports, or **photo scan** that OCRs a picture
+  of a paper report on-device — with a review step before anything is saved.
 - **Learn** — a plain-language "what is this / good to know" explainer for
   each of ~50 markers.
 - **Light & dark themes**, friendly icons, smooth animations, offline support,
