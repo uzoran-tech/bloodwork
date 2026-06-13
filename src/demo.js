@@ -52,7 +52,7 @@ export function demoReports() {
       if (rand() < 0.12 && i !== 0 && i !== 10) continue
       values[id] = round(jitter(traj[i], AMPLITUDE[id]), id)
     }
-    reports.push({ id: `demo-${i}`, date, lab: 'Demo Lab', notes: i === 0 ? 'Baseline' : '', values })
+    reports.push({ id: `demo-${i}`, date, lab: 'MEDLAB', sample: 'Serum', notes: i === 0 ? 'Baseline' : '', values })
   }
   return reports
 }

@@ -1871,7 +1871,7 @@ code {
 }
 
 .tab.active {
-  color: var(--accent);
+  color: var(--text);
 }
 
 .tab.active .tab-icon {
@@ -1882,6 +1882,29 @@ code {
   display: grid;
   place-items: center;
   line-height: 1;
+}
+
+/* Centered raised Add button */
+.add-tab {
+  color: #2f405e;
+}
+
+.add-tab .tab-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #2f405e;
+  color: #fff;
+  margin-top: -26px;
+  box-shadow: 0 10px 20px rgba(31, 44, 69, 0.28);
+  border: 4px solid var(--chrome);
+}
+
+.add-tab .tab-plus {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: -2px;
 }
 
 /* ---------- Reduced motion ---------- */
@@ -2335,4 +2358,84 @@ code {
   font-size: 11px;
   font-weight: 800;
   color: var(--muted);
+}
+
+/* ============================================================
+   Home — exact match to the handoff reference: calm navy
+   palette, Inter type, soft green/red/blue. Scoped to .home;
+   other screens keep their own styling.
+   ============================================================ */
+
+.home {
+  font-family: 'Inter', var(--sans);
+  --text: #1f2c45;
+  --muted: #7b8495;
+  --line: #e1e6ec;
+  --home-surface: #f4f6f8;
+  --home-tile: #ffffff;
+  --grad: #2f405e; /* solid navy: avatar + primary CTA */
+  --accent: #66718a; /* muted eyebrow / links */
+  --green: #2a8c6b;
+  --red: #b75e55;
+  --blue: #5870ae;
+  --tint-teal: #dff3ec;
+  --on-teal: #2a8c6b;
+  --tint-rose: #f7e7e4;
+  --on-rose: #b75e55;
+  --tint-blue: #e8edf9;
+  --on-blue: #5870ae;
+  --badge-green-bg: #dff3ec;
+  --badge-red-bg: #f7e7e4;
+  --badge-blue-bg: #e8edf9;
+  --shadow: 0 1px 2px rgba(31, 44, 69, 0.04), 0 10px 26px rgba(31, 44, 69, 0.06);
+  --shadow-pop: 0 10px 24px rgba(31, 44, 69, 0.1);
+}
+
+.home * {
+  font-family: inherit;
+}
+
+/* Header eyebrow is uppercase muted, not an accent color */
+.home .eyebrow {
+  color: #65718b;
+  letter-spacing: 2px;
+}
+
+/* Lab pill: lab name + sample type on two lines */
+.lab-pill {
+  min-width: 92px;
+  padding: 11px 14px;
+}
+
+.lab-pill strong {
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+.lab-pill small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* In-range icon: rounded square, matching the reference */
+.inrange-check {
+  border-radius: 18px;
+}
+
+/* View trends: a white button, like the reference (not a text link) */
+.ins-cta {
+  background: var(--home-tile);
+  color: var(--text);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  margin-top: 10px;
+  font-weight: 800;
+}
+
+.ins-cta span {
+  opacity: 0.5;
+  font-size: 18px;
 }

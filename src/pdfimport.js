@@ -149,8 +149,29 @@ function findReportDate(lines) {
   return null
 }
 
+// Best-effort lab name + sample type from the header, shown on the home pill.
+function findLab(lines) {
+  for (const l of lines) {
+    const m = l.match(/\b(medlab|biomedica|konzilijum|beo-?lab|zavod za[^,\n]*)\b/i)
+    if (m) return /medlab/i.test(m[1]) ? 'MEDLAB' : m[1].replace(/\s+/g, ' ').trim()
+  }
+  return ''
+}
+
+function findSample(lines) {
+  for (const l of lines) {
+    if (/\bserum/i.test(l)) return 'Serum'
+    if (/\bplazma|plasma/i.test(l)) return 'Plasma'
+    if (/\burin/i.test(l)) return 'Urine'
+    if (/puna krv|whole blood|krvna slika/i.test(l)) return 'Whole blood'
+  }
+  return ''
+}
+
 export function parseLabLines(lines) {
   const date = findReportDate(lines)
+  const lab = findLab(lines)
+  const sample = findSample(lines)
 
   const values = {}
   for (const line of lines) {
@@ -161,5 +182,5 @@ export function parseLabLines(lines) {
     const v = extractValue(line)
     if (v != null) values[id] = v
   }
-  return { date, values }
+  return { date, values, lab, sample }
 }
