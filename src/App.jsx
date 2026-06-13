@@ -11,8 +11,8 @@ import { IconPulse, IconTrend, IconReports, IconPlus, IconDrop } from './compone
 const TABS = [
   { id: 'dashboard', label: 'Overview', Icon: IconPulse },
   { id: 'trends', label: 'Trends', Icon: IconTrend },
+  { id: 'add', label: 'Add', Icon: IconPlus, fab: true },
   { id: 'reports', label: 'Reports', Icon: IconReports },
-  { id: 'add', label: 'Add', Icon: IconPlus },
 ]
 
 const THEME_KEY = 'bloodtrack.theme'
@@ -105,17 +105,17 @@ export default function App() {
       {detailId && <MarkerDetail markerId={detailId} reports={reports} onClose={() => setDetailId(null)} />}
 
       <nav className="tabbar">
-        {TABS.map(({ id, label, Icon }) => (
+        {TABS.map(({ id, label, Icon, fab }) => (
           <button
             key={id}
-            className={`tab ${tab === id ? 'active' : ''}`}
+            className={`tab ${fab ? 'add-tab' : ''} ${tab === id ? 'active' : ''}`}
             onClick={() => {
               if (id === 'trends') setTrendsPanel(null)
               setTab(id)
             }}
           >
             <span className="tab-icon">
-              <Icon size={21} />
+              {fab ? <span className="tab-plus">+</span> : <Icon size={21} />}
             </span>
             <span>{label}</span>
           </button>

@@ -1,5 +1,6 @@
 import { sortByDate, seriesFor } from '../store.js'
 import { markerById, statusOf, PANELS } from '../catalog.js'
+import { IconBell } from './Icons.jsx'
 
 const TINTS = ['t-rose', 't-teal', 't-lav', 't-amber', 't-blue']
 // Kept for Trends/Reports, which import it.
@@ -138,11 +139,12 @@ function deriveInsights(reports, latest) {
 export default function Dashboard({ reports, onOpenMarker, onOpenPanel, onViewReport, theme, onToggleTheme }) {
   const sorted = sortByDate(reports)
   const latest = sorted[sorted.length - 1]
+  // Placeholder profile name until profile editing exists; matches the home reference.
   const name = (() => {
     try {
-      return localStorage.getItem('bloodtrack.name') || ''
+      return localStorage.getItem('bloodtrack.name') || 'Zoran'
     } catch {
-      return ''
+      return 'Zoran'
     }
   })()
 
@@ -164,19 +166,15 @@ export default function Dashboard({ reports, onOpenMarker, onOpenPanel, onViewRe
   return (
     <div className="home">
       <header className="home-header">
-        <div className="home-avatar">{name ? name[0].toUpperCase() : '🩸'}</div>
-        <button
-          className="icon-btn"
-          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          onClick={onToggleTheme}
-        >
-          {theme === 'light' ? '☾' : '☀'}
+        <div className="home-avatar">{name[0].toUpperCase()}</div>
+        <button className="icon-btn" title="Notifications" aria-label="Notifications">
+          <IconBell size={20} />
         </button>
       </header>
 
       <div className="home-intro">
         <p className="eyebrow">Home</p>
-        <h1 className="home-title">{name ? `Hello, ${name}` : 'Your bloodwork'}</h1>
+        <h1 className="home-title">Hello, {name}</h1>
         <p className="home-sub">Latest bloodwork</p>
       </div>
 
@@ -189,6 +187,7 @@ export default function Dashboard({ reports, onOpenMarker, onOpenPanel, onViewRe
           {latest.lab && (
             <span className="lab-pill">
               <strong>{latest.lab}</strong>
+              {latest.sample && <small>{latest.sample}</small>}
             </span>
           )}
         </div>

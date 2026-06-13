@@ -69,9 +69,9 @@ export default function AddData({ reports, setReports, done }) {
     try {
       const { extractPdfLines, parseLabLines } = await import('../pdfimport.js')
       const lines = await extractPdfLines(f)
-      const { date: d, values } = parseLabLines(lines)
+      const { date: d, values, lab, sample } = parseLabLines(lines)
       if (Object.keys(values).length > 0) {
-        setPreview({ date: d || '', values, fileName: f.name })
+        setPreview({ date: d || '', values, fileName: f.name, lab, sample })
       } else if (lines.length === 0) {
         setFeedback({
           tone: 'warn',
@@ -112,9 +112,9 @@ export default function AddData({ reports, setReports, done }) {
         import('../pdfimport.js'),
       ])
       const lines = await extractPhotoLines(f, setOcrProgress)
-      const { date: d, values } = parseLabLines(lines)
+      const { date: d, values, lab, sample } = parseLabLines(lines)
       if (Object.keys(values).length > 0) {
-        setPreview({ date: d || '', values, fileName: f.name || 'photo', source: 'photo' })
+        setPreview({ date: d || '', values, fileName: f.name || 'photo', source: 'photo', lab, sample })
       } else {
         setFeedback({
           tone: 'warn',
@@ -134,7 +134,7 @@ export default function AddData({ reports, setReports, done }) {
 
   function confirmPreview() {
     if (!preview.date) return setFeedback({ tone: 'warn', text: 'Pick the test date first.' })
-    setReports(mergeReport(reports, { date: preview.date, lab: '', notes: `Imported from ${preview.fileName}`, values: preview.values }))
+    setReports(mergeReport(reports, { date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values }))
     setFeedback({ tone: 'good', text: `Saved ${Object.keys(preview.values).length} values for ${preview.date}.` })
     setPreview(null)
     setTimeout(done, 800)

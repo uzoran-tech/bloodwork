@@ -38,7 +38,7 @@ export function mergeReport(reports, report) {
   if (existing) {
     return reports.map((r) =>
       r.date === report.date
-        ? { ...r, lab: report.lab || r.lab, notes: report.notes || r.notes, values: { ...r.values, ...report.values } }
+        ? { ...r, lab: report.lab || r.lab, sample: report.sample || r.sample, notes: report.notes || r.notes, values: { ...r.values, ...report.values } }
         : r
     )
   }
