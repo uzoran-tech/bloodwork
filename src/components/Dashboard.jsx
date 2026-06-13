@@ -1,209 +1,287 @@
-import { useEffect, useState } from 'react'
-import { rangeStats, buildInsights, sortByDate, seriesFor, trackedMarkers } from '../store.js'
-import { PANELS, PANEL_ICONS, statusOf } from '../catalog.js'
+import { sortByDate, seriesFor } from '../store.js'
+import { markerById, statusOf, PANELS } from '../catalog.js'
 
 const TINTS = ['t-rose', 't-teal', 't-lav', 't-amber', 't-blue']
+// Kept for Trends/Reports, which import it.
 export const panelTint = (panel) => TINTS[PANELS.indexOf(panel) % TINTS.length]
-
-const TONE_ICONS = { warn: '▲', good: '✓', info: '→' }
-
-function greeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 18) return 'Good afternoon'
-  return 'Good evening'
-}
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-export default function Dashboard({ reports, onOpenMarker, onOpenPanel, theme, onToggleTheme }) {
-  const { inRange, total, flags } = rangeStats(reports)
-  const insights = buildInsights(reports)
-  const pct = total ? Math.round((inRange / total) * 100) : 0
-  const [allInsights, setAllInsights] = useState(false)
+// Reference summary with units, from the catalog's numeric bounds.
+function refSummary(m) {
+  if (m.lo != null && m.hi != null) return `Ref ${m.lo}–${m.hi} ${m.unit}`
+  if (m.hi != null) return `Ref below ${m.hi} ${m.unit}`
+  if (m.lo != null) return `Ref above ${m.lo} ${m.unit}`
+  return 'No reference provided'
+}
 
-  // Same score computed without the newest report = "vs last test".
-  const sorted = sortByDate(reports)
-  const latest = sorted[sorted.length - 1]
-  let delta = null
-  if (sorted.length > 1) {
-    const prev = rangeStats(sorted.slice(0, -1))
-    if (prev.total > 0) delta = pct - Math.round((prev.inRange / prev.total) * 100)
+// How far out of range, for ordering worst-first.
+const distance = (m, v) =>
+  statusOf(m, v) === 'high' ? v / m.hi : statusOf(m, v) === 'low' ? m.lo / Math.max(v, 1e-9) : 0
+
+// A small range-position bar: green band = reference, dot = latest value.
+function HomeRangeBar({ m, value }) {
+  if (m.lo == null && m.hi == null) return null
+  const lo = m.lo ?? Math.min(value, m.hi) * 0.5
+  const hi = m.hi ?? Math.max(value, m.lo) * 1.5
+  const span = hi - lo || Math.abs(hi) || 1
+  const min = lo - span * 0.4
+  const max = hi + span * 0.4
+  const at = (v) => Math.max(4, Math.min(96, ((v - min) / (max - min)) * 100))
+  const target =
+    m.lo != null && m.hi != null ? `Target ${m.lo}–${m.hi}` : m.hi != null ? `Target <${m.hi}` : `Target >${m.lo}`
+  return (
+    <span className="hbar">
+      <span className="hbar-track">
+        <span className="hbar-band" style={{ left: `${at(lo)}%`, width: `${at(hi) - at(lo)}%` }} />
+        <span className="hbar-pin" style={{ left: `${at(value)}%` }} />
+        <span className="hbar-pill" style={{ left: `${at(value)}%` }}>
+          {value}
+        </span>
+      </span>
+      <span className="hbar-scale">{target}</span>
+    </span>
+  )
+}
+
+// Home insights: change/pattern only, never a plain status restatement.
+// Movement is judged against the boundary the value relates to, not a midpoint,
+// so one-sided markers (CRP lower-is-better, HDL higher-is-better) read right,
+// and in-range drift isn't labeled "Worsened".
+function deriveInsights(reports, latest) {
+  const cands = []
+  for (const id of Object.keys(latest.values)) {
+    const m = markerById(id)
+    if (!m) continue
+    const s = seriesFor(reports, id)
+    if (s.length < 2) continue
+    const prev = s[s.length - 2].value
+    const cur = s[s.length - 1].value
+    if (prev === cur) continue
+    const pct = Math.abs((cur - prev) / Math.abs(prev)) * 100
+    const stPrev = statusOf(m, prev)
+    const stCur = statusOf(m, cur)
+    let label, tone, tail, salience
+
+    if (stPrev !== 'normal' && stCur === 'normal') {
+      label = 'Improved'
+      tone = 'good'
+      tail = 'back in range'
+      salience = 2000 + pct
+    } else if (stPrev === 'normal' && stCur !== 'normal') {
+      label = 'Worsened'
+      tone = 'review'
+      tail = 'now needs review'
+      salience = 1500 + pct
+    } else if (stCur !== 'normal') {
+      // Still out of range: closer to the breached bound = better.
+      const bound = stCur === 'high' ? m.hi : m.lo
+      if (pct < 2) continue
+      const closer = Math.abs(cur - bound) < Math.abs(prev - bound)
+      label = closer ? 'Improved' : 'Worsened'
+      tone = closer ? 'good' : 'review'
+      tail = closer ? 'closer to target' : 'further from target'
+      salience = 500 + pct
+    } else {
+      // In range both times: only surface a big move, as a neutral trend.
+      if (pct < 15) continue
+      label = 'Trend'
+      tone = 'neutral'
+      tail = null
+      salience = pct
+    }
+
+    cands.push({
+      markerId: m.id,
+      m,
+      value: cur,
+      title: m.name,
+      label,
+      tone,
+      copy: `${prev} → ${cur} ${m.unit}${tail ? `, ${tail}` : ''}`,
+      salience,
+    })
+  }
+  cands.sort((a, b) => b.salience - a.salience)
+  const items = cands.slice(0, 2)
+
+  // Pattern: where the need-review markers cluster.
+  const need = Object.entries(latest.values)
+    .map(([id, v]) => ({ m: markerById(id), v }))
+    .filter((x) => x.m && statusOf(x.m, x.v) !== 'normal')
+  if (need.length >= 2 && items.length < 3) {
+    const byPanel = {}
+    for (const n of need) byPanel[n.m.panel] = (byPanel[n.m.panel] || 0) + 1
+    const [topPanel, cnt] = Object.entries(byPanel).sort((a, b) => b[1] - a[1])[0]
+    if (cnt >= 2) {
+      items.push({
+        markerId: need.find((n) => n.m.panel === topPanel).m.id,
+        title: `Most review markers are ${topPanel.toLowerCase()}`,
+        tone: 'neutral',
+        copy: `${cnt} of ${need.length} markers needing review`,
+      })
+    }
   }
 
-  const scoreBadge = pct >= 85 ? 'optimal' : pct >= 60 ? 'good' : 'attention'
-  const headline =
-    flags.length === 0
-      ? 'Everything is in range today'
-      : `${flags.length} marker${flags.length > 1 ? 's' : ''} could use a look`
-
-  // Sweep the ring from 0 to the real value on mount.
-  const [shownPct, setShownPct] = useState(0)
-  useEffect(() => {
-    const t = setTimeout(() => setShownPct(pct), 60)
-    return () => clearTimeout(t)
-  }, [pct])
-
-  const tracked = trackedMarkers(reports)
-  const panels = PANELS.map((panel) => {
-    const markers = tracked.filter((m) => m.panel === panel)
-    if (markers.length === 0) return null
-    let ok = 0
-    for (const m of markers) {
-      const s = seriesFor(reports, m.id)
-      if (s.length && statusOf(m, s[s.length - 1].value) === 'normal') ok += 1
+  if (items.length === 0) {
+    const anyId = Object.keys(latest.values)[0]
+    if (reports.length < 2) {
+      items.push({ markerId: anyId, title: 'Baseline created', tone: 'neutral', copy: 'Future results will show what changed.' })
+    } else {
+      items.push({ markerId: anyId, title: 'Holding steady', tone: 'good', copy: 'No major shifts since your previous results.' })
     }
-    return { panel, count: markers.length, ok }
-  }).filter(Boolean)
+  }
+  return items.slice(0, 3)
+}
 
-  const [featured, ...rest] = insights
-  const shownRest = allInsights ? rest : rest.slice(0, 3)
+export default function Dashboard({ reports, onOpenMarker, onOpenPanel, onViewReport, theme, onToggleTheme }) {
+  const sorted = sortByDate(reports)
+  const latest = sorted[sorted.length - 1]
+  const name = (() => {
+    try {
+      return localStorage.getItem('bloodtrack.name') || ''
+    } catch {
+      return ''
+    }
+  })()
+
+  const entries = Object.entries(latest.values)
+    .map(([id, v]) => ({ m: markerById(id), v }))
+    .filter((x) => x.m)
+  const inRange = entries.filter((x) => statusOf(x.m, x.v) === 'normal')
+  const needReview = entries
+    .filter((x) => statusOf(x.m, x.v) !== 'normal')
+    .sort((a, b) => distance(b.m, b.v) - distance(a.m, a.v))
+
+  const inNames = inRange.map((x) => x.m.name)
+  const shownNames = inNames.slice(0, 12)
+  const moreNames = inNames.length - shownNames.length
+  const inRangeText = shownNames.join(' · ') + (moreNames > 0 ? ` · +${moreNames} more` : '')
+
+  const insights = deriveInsights(reports, latest)
 
   return (
-    <div className="dashboard">
-      <div className="hero">
-        <div className="hero-top">
+    <div className="home">
+      <header className="home-header">
+        <div className="home-avatar">{name ? name[0].toUpperCase() : '🩸'}</div>
+        <button
+          className="icon-btn"
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          onClick={onToggleTheme}
+        >
+          {theme === 'light' ? '☾' : '☀'}
+        </button>
+      </header>
+
+      <div className="home-intro">
+        <p className="eyebrow">Home</p>
+        <h1 className="home-title">{name ? `Hello, ${name}` : 'Your bloodwork'}</h1>
+        <p className="home-sub">Latest bloodwork</p>
+      </div>
+
+      <section className="lr-card">
+        <div className="lr-top">
           <div>
-            <p className="hero-greet">{greeting()}</p>
-            <h2>{headline}</h2>
+            <p className="eyebrow">Latest results</p>
+            <h2 className="lr-date">{fmtDate(latest.date)}</h2>
           </div>
-          <button
-            className="avatar-btn"
-            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            onClick={onToggleTheme}
-          >
-            <span className="avatar-face">{theme === 'light' ? '☺' : '☾'}</span>
-          </button>
+          {latest.lab && (
+            <span className="lab-pill">
+              <strong>{latest.lab}</strong>
+            </span>
+          )}
         </div>
 
-        <div className="score-card">
-          <div>
-            <p className="score-label">In-range score</p>
-            <div className="score-value">
-              {pct}
-              <small>/100</small>
+        <div className="count-tiles">
+          <div className="count-tile neutral">
+            <span>{entries.length}</span>
+            <small>Reviewed</small>
+          </div>
+          <div className="count-tile good">
+            <span>{inRange.length}</span>
+            <small>In range</small>
+          </div>
+          <div className="count-tile review">
+            <span>{needReview.length}</span>
+            <small>Need review</small>
+          </div>
+        </div>
+
+        {needReview.length > 0 && (
+          <div className="lr-section">
+            <div className="lr-section-head">
+              <strong>Needs attention</strong>
+              <span className="count-pill">{needReview.length}</span>
             </div>
-            <div className="score-meta">
-              <span className={`badge ${scoreBadge}`}>{scoreBadge}</span>
-              {delta != null && delta !== 0 && (
-                <span>
-                  {delta > 0 ? '+' : ''}
-                  {delta} vs last test
-                </span>
-              )}
-            </div>
-            <div className="score-meta">
-              <span>Last test · {fmtDate(latest.date)}</span>
+            <div className="attn-list">
+              {needReview.map(({ m, v }) => {
+                const st = statusOf(m, v)
+                return (
+                  <button key={m.id} className="attn-cell" onClick={() => onOpenMarker(m.id)}>
+                    <span className="attn-name">{m.name}</span>
+                    <span className={`attn-arrow ${st}`}>{st === 'high' ? '↑' : '↓'}</span>
+                    <span className="attn-value">
+                      {v} {m.unit}
+                    </span>
+                    <span className="attn-ref">{refSummary(m)}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
-          <div className="ring" style={{ '--pct': shownPct }}>
-            <span>
-              {inRange}/{total}
-            </span>
+        )}
+
+        {inRange.length > 0 && (
+          <div className="lr-section">
+            <div className="lr-section-head">
+              <strong>In range</strong>
+              <span className="count-pill">{inRange.length}</span>
+            </div>
+            <div className="inrange-summary">
+              <span className="inrange-check">✓</span>
+              <div>
+                <h4>
+                  {inRange.length} marker{inRange.length === 1 ? '' : 's'} currently within range
+                </h4>
+                <p>{inRangeText}</p>
+              </div>
+            </div>
           </div>
+        )}
+
+        <button className="lr-cta" onClick={onViewReport}>
+          View full report <span>›</span>
+        </button>
+      </section>
+
+      <div className="home-insights">
+        <div className="ins-head">
+          <strong>Trends &amp; insights</strong>
+          <span className="count-pill">{insights.length}</span>
+        </div>
+        <div className="ins-card">
+          {insights.map((ins, i) => (
+            <button key={i} className="ins-item" onClick={() => onOpenMarker(ins.markerId)}>
+              <span className="ins-top">
+                <strong>{ins.title}</strong>
+                {ins.label && <em className={`ins-label ${ins.tone}`}>{ins.label}</em>}
+              </span>
+              {ins.m && (ins.m.lo != null || ins.m.hi != null) && <HomeRangeBar m={ins.m} value={ins.value} />}
+              <span className="ins-copy">{ins.copy}</span>
+            </button>
+          ))}
+          <button className="ins-cta" onClick={() => onOpenPanel(null)}>
+            View trends <span>›</span>
+          </button>
         </div>
       </div>
 
       <div className="pad">
-        {flags.length > 0 && (
-          <>
-            <div className="section-head">
-              <strong>Needs attention</strong>
-              <span className="count-pill">{flags.length}</span>
-            </div>
-            <div className="flag-list">
-              {flags.map((f) => (
-                <button key={f.marker.id} className="flag-row" onClick={() => onOpenMarker(f.marker.id)}>
-                  <span className={`flag-bar ${f.status}`} />
-                  <span>
-                    <span className="flag-name">{f.marker.name}</span>
-                    <span className="flag-sub">
-                      {f.status === 'high' ? 'Above' : 'Below'}{' '}
-                      {f.status === 'high' ? f.marker.hi : f.marker.lo} target
-                    </span>
-                  </span>
-                  <span className="flag-value">
-                    <strong>{f.value}</strong>
-                    <small>{f.marker.unit}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {featured && (
-          <>
-            <div className="section-head">
-              <strong>Insights</strong>
-              <span className="count-pill">{insights.length}</span>
-            </div>
-            <div className="insight-hero" onClick={() => onOpenMarker(featured.markerId)}>
-              <span className="insight-avatar">✨</span>
-              <div>
-                <div className="insight-hero-head">
-                  <strong>{featured.title}</strong>
-                  <span className={`badge ${featured.tone === 'warn' ? 'attention' : featured.tone === 'good' ? 'good' : 'low'}`}>
-                    {featured.tone === 'warn' ? 'watch' : featured.tone === 'good' ? 'improved' : 'trend'}
-                  </span>
-                </div>
-                <p>{featured.text.charAt(0).toUpperCase() + featured.text.slice(1)}</p>
-                <span className="open-link">Open marker →</span>
-              </div>
-            </div>
-          </>
-        )}
-
-        {rest.length > 0 && (
-          <>
-            <ul className="insight-list" style={{ marginTop: 10 }}>
-              {shownRest.map((ins, i) => (
-                <li key={i} className={`insight ${ins.tone}`} onClick={() => onOpenMarker(ins.markerId)}>
-                  <span className={`insight-ico ${ins.tone}`}>{TONE_ICONS[ins.tone]}</span>
-                  <span className="insight-text">
-                    <strong>{ins.title}</strong> {ins.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {rest.length > 3 && (
-              <button className="show-all" onClick={() => setAllInsights(!allInsights)}>
-                {allInsights ? 'Show less' : `Show all ${rest.length} insights`}
-              </button>
-            )}
-          </>
-        )}
-
-        <div className="section-head">
-          <strong>Health categories</strong>
-          <button className="section-link" onClick={() => onOpenPanel(null)}>
-            See all
-          </button>
-        </div>
-        <div className="cat-grid">
-          {panels.map((p, i) => (
-            <button
-              key={p.panel}
-              className={`cat-card ${panelTint(p.panel)}`}
-              style={{ animationDelay: `${i * 50}ms` }}
-              onClick={() => onOpenPanel(p.panel)}
-            >
-              <span className="cat-icon">{PANEL_ICONS[p.panel]}</span>
-              <span>
-                <strong>{p.panel}</strong>
-                <span className="cat-status">{p.ok === p.count ? 'Good' : 'Attention'}</span>
-                <span className="cat-sub">
-                  {p.ok}/{p.count} in range
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-
         <p className="disclaimer">
-          Reference ranges are general adult values; your lab's printed range takes precedence. This
-          is not medical advice — discuss results with your doctor.
+          Counts cover the markers in your latest report against general adult reference ranges; your
+          lab's printed range takes precedence. This is not medical advice — discuss results with your
+          doctor.
         </p>
       </div>
     </div>

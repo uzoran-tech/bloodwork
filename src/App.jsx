@@ -78,6 +78,7 @@ export default function App() {
                 reports={reports}
                 onOpenMarker={setDetailId}
                 onOpenPanel={openPanel}
+                onViewReport={() => setTab('reports')}
                 theme={theme}
                 onToggleTheme={toggleTheme}
               />
