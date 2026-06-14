@@ -2601,3 +2601,55 @@ code {
   font-size: 17px;
   flex: none;
 }
+
+/* ============================================================
+   Full-width grouped results (no boxes) — flat list with
+   category headers and dividers, like the reference.
+   ============================================================ */
+
+.home {
+  background: #eaeef3;
+}
+
+.results {
+  background: #ffffff;
+  margin-top: 18px;
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 22px 20px 6px;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: #1f2c45;
+}
+
+.group-ico {
+  font-size: 17px;
+}
+
+.group-count {
+  font-size: 13px;
+  font-weight: 800;
+  color: #8b95a6;
+}
+
+.results .mk-row {
+  border-top: 0;
+  border-bottom: 1px solid #eef1f5;
+  padding: 16px 20px;
+}
+
+.result-group:last-child .mk-row:last-child {
+  border-bottom: 0;
+}
