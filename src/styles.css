@@ -2439,3 +2439,165 @@ code {
   opacity: 0.5;
   font-size: 18px;
 }
+
+/* ============================================================
+   Marker rows (Overview) — name + status pill on the left,
+   value/unit + reference on the right, flat list with dividers.
+   ============================================================ */
+
+.mk-card {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 1px 2px rgba(31, 44, 69, 0.04), 0 10px 26px rgba(31, 44, 69, 0.06);
+  padding: 2px 18px;
+}
+
+.mk-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  background: none;
+  border: 0;
+  border-top: 1px solid #eef1f5;
+  padding: 18px 0;
+  text-align: left;
+  font-family: inherit;
+  color: #1f2c45;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.mk-row:first-child {
+  border-top: 0;
+}
+
+.mk-row:active {
+  opacity: 0.6;
+}
+
+.mk-name {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: #1f2c45;
+}
+
+.mk-pill {
+  margin-top: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px 4px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mk-pill-ico {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.mk-pill.normal {
+  background: #e7f6ef;
+  color: #2a8c6b;
+}
+
+.mk-pill.high {
+  background: #fbeae7;
+  color: #c0524a;
+}
+
+.mk-pill.low {
+  background: #e9eef9;
+  color: #4f6bb0;
+}
+
+.mk-right {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mk-value {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #1f2c45;
+}
+
+.mk-value.high {
+  color: #d2453c;
+}
+
+.mk-value.low {
+  color: #4f6bb0;
+}
+
+.mk-value small {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8b95a6;
+  margin-left: 3px;
+}
+
+.mk-ref {
+  display: block;
+  margin-top: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #8b95a6;
+}
+
+/* Reports header: use the calm navy instead of the old gradient */
+.reports .hero {
+  background: #2f405e;
+}
+
+/* Marker detail — web sources list */
+.sources {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sources a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px 15px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.src-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.src-main strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.src-main small {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.src-arrow {
+  color: var(--muted);
+  font-size: 17px;
+  flex: none;
+}
