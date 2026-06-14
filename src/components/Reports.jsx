@@ -23,7 +23,7 @@ function sourceIcon(notes) {
   return '🧪'
 }
 
-export default function Reports({ reports, setReports, onAdd, theme, onToggleTheme }) {
+export default function Reports({ reports, setReports, onAdd }) {
   const [open, setOpen] = useState(null)
   const sorted = sortByDate(reports).reverse()
   const totalValues = reports.reduce((t, r) => t + Object.keys(r.values).length, 0)
@@ -57,13 +57,6 @@ export default function Reports({ reports, setReports, onAdd, theme, onToggleThe
             </p>
             <h2>Your reports</h2>
           </div>
-          <button
-            className="avatar-btn"
-            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            onClick={onToggleTheme}
-          >
-            <span className="avatar-face">{theme === 'light' ? '☺' : '☾'}</span>
-          </button>
         </div>
       </div>
 

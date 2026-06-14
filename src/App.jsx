@@ -2,44 +2,33 @@ import { useEffect, useState } from 'react'
 import { loadReports, saveReports } from './store.js'
 import { demoReports } from './demo.js'
 import Dashboard from './components/Dashboard.jsx'
-import Trends from './components/Trends.jsx'
 import Reports from './components/Reports.jsx'
 import AddData from './components/AddData.jsx'
 import MarkerDetail from './components/MarkerDetail.jsx'
-import { IconPulse, IconTrend, IconReports, IconPlus, IconDrop } from './components/Icons.jsx'
+import { IconPulse, IconReports, IconPlus, IconDrop } from './components/Icons.jsx'
 
 const TABS = [
   { id: 'dashboard', label: 'Overview', Icon: IconPulse },
-  { id: 'trends', label: 'Trends', Icon: IconTrend },
   { id: 'add', label: 'Add', Icon: IconPlus, fab: true },
   { id: 'reports', label: 'Reports', Icon: IconReports },
 ]
 
 const THEME_KEY = 'bloodtrack.theme'
-const THEME_COLORS = { light: '#5a67f2', dark: '#4a55d8' }
 
 export default function App() {
   const [reports, setReports] = useState(loadReports)
   const [tab, setTab] = useState('dashboard')
   const [detailId, setDetailId] = useState(null)
-  const [trendsPanel, setTrendsPanel] = useState(null)
-  const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || 'light')
 
   useEffect(() => {
     saveReports(reports)
   }, [reports])
 
+  // Light theme only (no toggle); keep the attribute stable for CSS.
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    localStorage.setItem(THEME_KEY, theme)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLORS[theme])
-  }, [theme])
-
-  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light')
-  const openPanel = (panel) => {
-    setTrendsPanel(panel)
-    setTab('trends')
-  }
+    document.documentElement.dataset.theme = localStorage.getItem(THEME_KEY) || 'light'
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#2f405e')
+  }, [])
 
   const empty = reports.length === 0
 
@@ -56,14 +45,14 @@ export default function App() {
             </div>
             <div className="welcome-body">
               <p>
-                Add lab reports and BloodTrack charts every marker against its reference range,
-                spots trends, and surfaces what changed.
+                Add your lab reports and BloodTrack shows every marker against its reference range,
+                grouped by what needs attention.
               </p>
               <button className="btn primary" onClick={() => setTab('add')}>
                 Add your first report
               </button>
               <button className="btn ghost" onClick={() => setReports(demoReports())}>
-                Explore with 5 years of demo data
+                Explore with demo data
               </button>
               <p className="disclaimer">
                 Data stays on this device. BloodTrack describes your numbers — it is not medical
@@ -73,27 +62,9 @@ export default function App() {
           </div>
         ) : (
           <div className="view" key={tab}>
-            {tab === 'dashboard' && (
-              <Dashboard
-                reports={reports}
-                onOpenMarker={setDetailId}
-                onOpenPanel={openPanel}
-                onViewReport={() => setTab('reports')}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-              />
-            )}
-            {tab === 'trends' && (
-              <Trends reports={reports} onOpenMarker={setDetailId} initialPanel={trendsPanel} />
-            )}
+            {tab === 'dashboard' && <Dashboard reports={reports} onOpenMarker={setDetailId} />}
             {tab === 'reports' && (
-              <Reports
-                reports={reports}
-                setReports={setReports}
-                onAdd={() => setTab('add')}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-              />
+              <Reports reports={reports} setReports={setReports} onAdd={() => setTab('add')} />
             )}
             {tab === 'add' && (
               <AddData reports={reports} setReports={setReports} done={() => setTab('dashboard')} />
@@ -109,10 +80,7 @@ export default function App() {
           <button
             key={id}
             className={`tab ${fab ? 'add-tab' : ''} ${tab === id ? 'active' : ''}`}
-            onClick={() => {
-              if (id === 'trends') setTrendsPanel(null)
-              setTab(id)
-            }}
+            onClick={() => setTab(id)}
           >
             <span className="tab-icon">
               {fab ? <span className="tab-plus">+</span> : <Icon size={21} />}
