@@ -1,5 +1,5 @@
 import { sortByDate } from '../store.js'
-import { markerById, statusOf } from '../catalog.js'
+import { markerById, statusOf, PANELS, PANEL_ICONS } from '../catalog.js'
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -62,6 +62,13 @@ export default function Dashboard({ reports, onOpenMarker }) {
     .sort((a, b) => distance(b.m, b.v) - distance(a.m, a.v))
   const inRange = entries.filter((x) => statusOf(x.m, x.v) === 'normal')
 
+  // In-range results grouped by panel (Hormones, Vitamins & Minerals, …) so
+  // they scan by body system. Flagged markers stay in Needs attention above.
+  const groups = PANELS.map((panel) => ({
+    panel,
+    items: inRange.filter((x) => x.m.panel === panel),
+  })).filter((g) => g.items.length > 0)
+
   return (
     <div className="home">
       <header className="home-header">
@@ -104,35 +111,35 @@ export default function Dashboard({ reports, onOpenMarker }) {
         </div>
       </section>
 
-      <div className="pad">
+      <div className="results">
         {needReview.length > 0 && (
-          <section>
-            <div className="section-head">
-              <strong>Needs attention</strong>
-              <span className="count-pill">{needReview.length}</span>
+          <div className="result-group">
+            <div className="group-head">
+              <span className="group-title">Needs attention</span>
+              <span className="group-count">{needReview.length}</span>
             </div>
-            <div className="mk-card">
-              {needReview.map(({ m, v }) => (
-                <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
-              ))}
-            </div>
-          </section>
+            {needReview.map(({ m, v }) => (
+              <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
+            ))}
+          </div>
         )}
 
-        {inRange.length > 0 && (
-          <section>
-            <div className="section-head">
-              <strong>In range</strong>
-              <span className="count-pill">{inRange.length}</span>
+        {groups.map((g) => (
+          <div className="result-group" key={g.panel}>
+            <div className="group-head">
+              <span className="group-title">
+                <span className="group-ico">{PANEL_ICONS[g.panel]}</span> {g.panel}
+              </span>
+              <span className="group-count">{g.items.length}</span>
             </div>
-            <div className="mk-card">
-              {inRange.map(({ m, v }) => (
-                <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
-              ))}
-            </div>
-          </section>
-        )}
+            {g.items.map(({ m, v }) => (
+              <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
+            ))}
+          </div>
+        ))}
+      </div>
 
+      <div className="pad">
         <p className="disclaimer">
           Reference intervals are general adult values; your lab's printed range takes precedence.
           This is not medical advice — discuss results with your doctor.

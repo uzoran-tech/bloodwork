@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { MARKERS, markerById, statusOf } from '../catalog.js'
 import { mergeReport, parseCSV } from '../store.js'
 
+const todayISO = () => new Date().toISOString().slice(0, 10)
+
 export default function AddData({ reports, setReports, done }) {
   const [mode, setMode] = useState('form')
   const [date, setDate] = useState('')
@@ -71,7 +73,7 @@ export default function AddData({ reports, setReports, done }) {
       const lines = await extractPdfLines(f)
       const { date: d, values, lab, sample } = parseLabLines(lines)
       if (Object.keys(values).length > 0) {
-        setPreview({ date: d || '', values, fileName: f.name, lab, sample })
+        setPreview({ date: d || todayISO(), dateGuess: !d, values, fileName: f.name, lab, sample })
       } else if (lines.length === 0) {
         setFeedback({
           tone: 'warn',
@@ -114,7 +116,7 @@ export default function AddData({ reports, setReports, done }) {
       const lines = await extractPhotoLines(f, setOcrProgress)
       const { date: d, values, lab, sample } = parseLabLines(lines)
       if (Object.keys(values).length > 0) {
-        setPreview({ date: d || '', values, fileName: f.name || 'photo', source: 'photo', lab, sample })
+        setPreview({ date: d || todayISO(), dateGuess: !d, values, fileName: f.name || 'photo', source: 'photo', lab, sample })
       } else {
         setFeedback({
           tone: 'warn',
@@ -154,7 +156,11 @@ export default function AddData({ reports, setReports, done }) {
           Test date
           <input type="date" value={preview.date} onChange={(e) => setPreview({ ...preview, date: e.target.value })} />
         </label>
-        {!preview.date && <p className="feedback warn">Could not find the test date in the PDF — pick it above before saving.</p>}
+        {preview.dateGuess && (
+          <p className="feedback warn">
+            Couldn't read the test date from the file — set to today. Change it above if that's not right.
+          </p>
+        )}
         <table className="history preview-table">
           <tbody>
             {entries.map(([id, v]) => {
