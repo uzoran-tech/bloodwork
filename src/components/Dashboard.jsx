@@ -74,6 +74,7 @@ export default function Dashboard({ reports, onOpenMarker }) {
       <div className="home-top">
         <div className="home-avatar">{name[0].toUpperCase()}</div>
         <div className="home-greet">
+          <p className="home-kicker">Overview</p>
           <h1 className="home-title">Hello, {name}</h1>
           <p className="home-sub">Your latest bloodwork</p>
         </div>
@@ -81,60 +82,66 @@ export default function Dashboard({ reports, onOpenMarker }) {
 
       <div className="report-sheet">
         <div className="sheet-summary">
-          <div className="lr-top">
-            <div>
-              <p className="eyebrow">Latest results</p>
-              <h2 className="lr-date">{fmtDate(latest.date)}</h2>
+          <div className="summary-card">
+            <div className="lr-top">
+              <div>
+                <p className="eyebrow">Latest results</p>
+                <h2 className="lr-date">{fmtDate(latest.date)}</h2>
+              </div>
+              {latest.lab && (
+                <span className="lab-pill">
+                  <strong>{latest.lab}</strong>
+                  {latest.sample && <small>{latest.sample}</small>}
+                </span>
+              )}
             </div>
-            {latest.lab && (
-              <span className="lab-pill">
-                <strong>{latest.lab}</strong>
-                {latest.sample && <small>{latest.sample}</small>}
-              </span>
-            )}
-          </div>
 
-          <div className="count-tiles">
-            <div className="count-tile neutral">
-              <span>{entries.length}</span>
-              <small>Reviewed</small>
-            </div>
-            <div className="count-tile good">
-              <span>{inRange.length}</span>
-              <small>In range</small>
-            </div>
-            <div className="count-tile review">
-              <span>{needReview.length}</span>
-              <small>Need review</small>
+            <div className="summary-divider" />
+
+            <div className="count-tiles">
+              <div className="count-tile neutral">
+                <span>{entries.length}</span>
+                <small>Reviewed</small>
+              </div>
+              <div className="count-tile good">
+                <span>{inRange.length}</span>
+                <small>In range</small>
+              </div>
+              <div className="count-tile review">
+                <span>{needReview.length}</span>
+                <small>Need review</small>
+              </div>
             </div>
           </div>
         </div>
 
-        {needReview.length > 0 && (
-          <div className="result-group">
-            <div className="group-head attention">
-              <span className="group-title">Needs attention</span>
-              <span className="group-count">{needReview.length}</span>
+        <div className="results-list">
+          {needReview.length > 0 && (
+            <div className="result-group">
+              <div className="group-head attention">
+                <span className="group-title">Needs attention</span>
+                <span className="group-count">{needReview.length}</span>
+              </div>
+              {needReview.map(({ m, v }) => (
+                <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
+              ))}
             </div>
-            {needReview.map(({ m, v }) => (
-              <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
-            ))}
-          </div>
-        )}
+          )}
 
-        {groups.map((g) => (
-          <div className="result-group" key={g.panel}>
-            <div className="group-head">
-              <span className="group-title">
-                <span className="group-ico">{PANEL_ICONS[g.panel]}</span> {g.panel}
-              </span>
-              <span className="group-count">{g.items.length}</span>
+          {groups.map((g) => (
+            <div className="result-group" key={g.panel}>
+              <div className="group-head">
+                <span className="group-title">
+                  <span className="group-ico">{PANEL_ICONS[g.panel]}</span> {g.panel}
+                </span>
+                <span className="group-count">{g.items.length}</span>
+              </div>
+              {g.items.map(({ m, v }) => (
+                <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
+              ))}
             </div>
-            {g.items.map(({ m, v }) => (
-              <MarkerRow key={m.id} m={m} v={v} onOpen={onOpenMarker} />
-            ))}
-          </div>
-        ))}
+          ))}
+        </div>
 
         <p className="disclaimer sheet-foot">
           Reference intervals are general adult values; your lab's printed range takes precedence.

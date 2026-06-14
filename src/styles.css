@@ -2833,3 +2833,200 @@ code {
   color: #5d6675;
   background: #e9edf3;
 }
+
+/* ============================================================
+   Home polish — clearer mobile hierarchy and navigation states.
+   ============================================================ */
+
+.home {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% -10%, rgba(88, 112, 174, 0.2), transparent 34%),
+    linear-gradient(180deg, #eef2f7 0%, #e9edf4 42%, #f6f8fb 100%);
+}
+
+.home-top {
+  padding: calc(18px + env(safe-area-inset-top)) 20px 18px;
+}
+
+.home-kicker {
+  margin: 0 0 2px;
+  color: #66718a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.home-top .home-avatar {
+  background: linear-gradient(145deg, #2f405e, #536b96);
+  color: #fff;
+  flex: none;
+}
+
+.report-sheet {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-bottom: 0;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+.sheet-summary {
+  padding: 18px 16px 10px;
+}
+
+.summary-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+  border: 1px solid #e6ebf2;
+  border-radius: 24px;
+  box-shadow: 0 12px 32px rgba(31, 44, 69, 0.08);
+  padding: 18px;
+}
+
+.summary-divider {
+  height: 1px;
+  margin: 16px 0 0;
+  background: #e8edf3;
+}
+
+.sheet-summary .lab-pill {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid #e6ebf2;
+  border-radius: 18px;
+}
+
+.sheet-summary .count-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.sheet-summary .count-tile {
+  border: 1px solid rgba(31, 44, 69, 0.05);
+  text-align: center;
+}
+
+.sheet-summary .count-tile span {
+  display: block;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.sheet-summary .count-tile small {
+  display: block;
+  margin-top: 6px;
+  color: #6f798a;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.results-list {
+  padding-top: 2px;
+}
+
+.result-group {
+  margin-top: 14px;
+}
+
+.result-group:first-child {
+  margin-top: 6px;
+}
+
+.group-head {
+  position: sticky;
+  top: 0;
+  margin: 0 12px 6px;
+  padding: 10px 12px;
+  background: #f3f6fa;
+  border: 1px solid #e1e7ef;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(31, 44, 69, 0.05);
+}
+
+.group-head.attention {
+  background: #fff3f1;
+  border-color: #f4d5d0;
+}
+
+.group-title {
+  color: #263551;
+  font-size: 13px;
+  letter-spacing: 1.15px;
+}
+
+.group-ico {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 9px;
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  font-size: 13px;
+}
+
+.group-head.attention .group-title::before {
+  content: '!';
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: #fbe0dc;
+  color: #c0524a;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.report-sheet .mk-row {
+  margin: 0 16px;
+  padding: 17px 4px;
+}
+
+.tabbar {
+  left: 14px;
+  right: 14px;
+  bottom: 10px;
+  border: 1px solid rgba(225, 230, 236, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 18px 44px rgba(31, 44, 69, 0.18);
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+}
+
+.tab {
+  min-width: 78px;
+  padding: 7px 12px;
+  border-radius: 18px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.tab.active:not(.add-tab) {
+  background: #eef2f8;
+  color: #2f405e;
+}
+
+.tab.active:not(.add-tab) .tab-icon {
+  color: #2f405e;
+}
+
+.add-tab .tab-icon {
+  background: linear-gradient(145deg, #2f405e, #4d638b);
+  box-shadow: 0 12px 24px rgba(31, 44, 69, 0.32);
+}
+
+.add-tab.active .tab-icon {
+  outline: 3px solid rgba(47, 64, 94, 0.18);
+}
+
+.add-tab.active {
+  color: #2f405e;
+}
