@@ -2653,3 +2653,167 @@ code {
 .result-group:last-child .mk-row:last-child {
   border-bottom: 0;
 }
+
+/* ============================================================
+   Home refine — integrated top + one continuous white report
+   sheet with strong, sticky section headers.
+   ============================================================ */
+
+.home {
+  background: #eaeef4;
+}
+
+/* Top: avatar + greeting, on the page background */
+.home-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: calc(18px + env(safe-area-inset-top)) 20px 16px;
+}
+
+.home-top .home-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 19px;
+  box-shadow: 0 6px 16px rgba(31, 44, 69, 0.18);
+}
+
+.home-greet {
+  min-width: 0;
+}
+
+.home-greet .home-title {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: #1f2c45;
+}
+
+.home-greet .home-sub {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #7b8495;
+}
+
+/* One continuous white report sheet */
+.report-sheet {
+  background: #ffffff;
+  border-radius: 26px 26px 0 0;
+  margin-top: 6px;
+  min-height: 70vh;
+  box-shadow: 0 -1px 0 rgba(31, 44, 69, 0.03), 0 -14px 30px rgba(31, 44, 69, 0.05);
+}
+
+.sheet-summary {
+  padding: 22px 20px 4px;
+}
+
+.sheet-summary .lr-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sheet-summary .eyebrow {
+  color: #8a93a3;
+}
+
+.sheet-summary .lr-date {
+  margin: 2px 0 0;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: #1f2c45;
+}
+
+.sheet-summary .lab-pill {
+  background: #f3f6fa;
+  box-shadow: none;
+}
+
+.sheet-summary .count-tiles {
+  margin-top: 18px;
+}
+
+.sheet-summary .count-tile {
+  border-radius: 18px;
+  padding: 14px 14px;
+}
+
+.sheet-summary .count-tile.neutral {
+  background: #f1f4f8;
+}
+
+/* Strong, sticky section headers */
+.group-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 20px;
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #edf0f5;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.result-group:first-of-type .group-head {
+  margin-top: 8px;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #5d6675;
+}
+
+.group-ico {
+  font-size: 15px;
+}
+
+.group-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: #8a93a3;
+  background: #eff2f6;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.group-head.attention .group-title {
+  color: #c0524a;
+}
+
+.group-head.attention .group-count {
+  background: #fbeae7;
+  color: #c0524a;
+}
+
+.sheet-foot {
+  margin: 0;
+  padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  opacity: 0.85;
+}
+
+/* Rows inside the report sheet need horizontal padding + bottom dividers */
+.report-sheet .mk-row {
+  border-top: 0;
+  border-bottom: 1px solid #eef1f5;
+  padding: 16px 20px;
+}
+
+.report-sheet .result-group:last-of-type .mk-row:last-of-type {
+  border-bottom: 0;
+}

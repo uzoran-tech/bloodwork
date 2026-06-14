@@ -71,50 +71,48 @@ export default function Dashboard({ reports, onOpenMarker }) {
 
   return (
     <div className="home">
-      <header className="home-header">
+      <div className="home-top">
         <div className="home-avatar">{name[0].toUpperCase()}</div>
-      </header>
-
-      <div className="home-intro">
-        <p className="eyebrow">Home</p>
-        <h1 className="home-title">Hello, {name}</h1>
-        <p className="home-sub">Latest bloodwork</p>
+        <div className="home-greet">
+          <h1 className="home-title">Hello, {name}</h1>
+          <p className="home-sub">Your latest bloodwork</p>
+        </div>
       </div>
 
-      <section className="lr-card">
-        <div className="lr-top">
-          <div>
-            <p className="eyebrow">Latest results</p>
-            <h2 className="lr-date">{fmtDate(latest.date)}</h2>
+      <div className="report-sheet">
+        <div className="sheet-summary">
+          <div className="lr-top">
+            <div>
+              <p className="eyebrow">Latest results</p>
+              <h2 className="lr-date">{fmtDate(latest.date)}</h2>
+            </div>
+            {latest.lab && (
+              <span className="lab-pill">
+                <strong>{latest.lab}</strong>
+                {latest.sample && <small>{latest.sample}</small>}
+              </span>
+            )}
           </div>
-          {latest.lab && (
-            <span className="lab-pill">
-              <strong>{latest.lab}</strong>
-              {latest.sample && <small>{latest.sample}</small>}
-            </span>
-          )}
+
+          <div className="count-tiles">
+            <div className="count-tile neutral">
+              <span>{entries.length}</span>
+              <small>Reviewed</small>
+            </div>
+            <div className="count-tile good">
+              <span>{inRange.length}</span>
+              <small>In range</small>
+            </div>
+            <div className="count-tile review">
+              <span>{needReview.length}</span>
+              <small>Need review</small>
+            </div>
+          </div>
         </div>
 
-        <div className="count-tiles">
-          <div className="count-tile neutral">
-            <span>{entries.length}</span>
-            <small>Reviewed</small>
-          </div>
-          <div className="count-tile good">
-            <span>{inRange.length}</span>
-            <small>In range</small>
-          </div>
-          <div className="count-tile review">
-            <span>{needReview.length}</span>
-            <small>Need review</small>
-          </div>
-        </div>
-      </section>
-
-      <div className="results">
         {needReview.length > 0 && (
           <div className="result-group">
-            <div className="group-head">
+            <div className="group-head attention">
               <span className="group-title">Needs attention</span>
               <span className="group-count">{needReview.length}</span>
             </div>
@@ -137,10 +135,8 @@ export default function Dashboard({ reports, onOpenMarker }) {
             ))}
           </div>
         ))}
-      </div>
 
-      <div className="pad">
-        <p className="disclaimer">
+        <p className="disclaimer sheet-foot">
           Reference intervals are general adult values; your lab's printed range takes precedence.
           This is not medical advice — discuss results with your doctor.
         </p>
