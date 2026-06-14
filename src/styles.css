@@ -2817,3 +2817,19 @@ code {
 .report-sheet .result-group:last-of-type .mk-row:last-of-type {
   border-bottom: 0;
 }
+
+/* Stronger category headers (were too pale) */
+.group-title {
+  color: #1f2c45;
+  font-size: 13.5px;
+  letter-spacing: 1px;
+}
+
+.group-ico {
+  font-size: 16px;
+}
+
+.group-count {
+  color: #5d6675;
+  background: #e9edf3;
+}
