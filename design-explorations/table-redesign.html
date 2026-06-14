@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lab results — table redesign explorations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* ============================================================
+       A fresh design canvas — neutral palette, Inter, generous
+       whitespace. Three distinct table treatments of the SAME data,
+       each easy to scan with a clear in-range indicator.
+       ============================================================ */
+    :root {
+      --bg: #f6f7f9;
+      --canvas: #ffffff;
+      --ink: #1a1d24;
+      --ink-2: #424752;
+      --muted: #757b87;
+      --line: #ececf0;
+      --line-strong: #dcdee4;
+      --accent: #4f46e5;
+
+      --ok: #15a34a;
+      --ok-bg: #e9f7ee;
+      --ok-bg-soft: #f3fbf6;
+      --hi: #dc2626;
+      --hi-bg: #fdeceb;
+      --hi-bg-soft: #fef5f4;
+      --lo: #d97706;
+      --lo-bg: #fdf2e1;
+      --lo-bg-soft: #fef9f0;
+
+      --radius: 16px;
+      --shadow: 0 1px 2px rgba(20, 23, 33, 0.04), 0 12px 32px rgba(20, 23, 33, 0.06);
+      --mono: 'Inter', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { max-width: 920px; margin: 0 auto; padding: 56px 28px 96px; }
+
+    .masthead { margin-bottom: 44px; }
+    .masthead .kicker {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 8px;
+    }
+    .masthead h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 10px; }
+    .masthead p { color: var(--muted); max-width: 60ch; margin: 0; font-size: 0.98rem; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 22px;
+      padding: 14px 18px;
+      background: var(--canvas);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 0.84rem;
+      color: var(--ink-2);
+    }
+    .legend b { font-weight: 600; }
+    .legend .swatch { display: inline-flex; align-items: center; gap: 8px; }
+    .key { width: 12px; height: 12px; border-radius: 4px; }
+    .key.ok { background: var(--ok); }
+    .key.hi { background: var(--hi); }
+    .key.lo { background: var(--lo); }
+
+    /* ---- section scaffolding ---- */
+    .variant { margin-top: 64px; }
+    .variant-head { margin-bottom: 18px; }
+    .variant-head .num {
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .variant-head h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0 6px; }
+    .variant-head p { color: var(--muted); margin: 0; font-size: 0.92rem; max-width: 64ch; }
+
+    .surface {
+      background: var(--canvas);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .surface-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .surface-head h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+    .surface-head .sample {
+      margin-left: auto;
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+
+    /* shared status pill */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 4px 11px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .pill.ok { background: var(--ok-bg); color: var(--ok); }
+    .pill.hi { background: var(--hi-bg); color: var(--hi); }
+    .pill.lo { background: var(--lo-bg); color: var(--lo); }
+    .pill .arrow { font-weight: 800; }
+
+    .num { font-variant-numeric: tabular-nums; }
+    .note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+      line-height: 1.45;
+    }
+    .note .mark { color: var(--lo); font-style: normal; font-weight: 700; margin-right: 4px; }
+
+    /* ============================================================
+       OPTION 1 — Editorial table
+       Calm, spacious, hairline-ruled. Out-of-range rows carry a
+       faint tint and a coloured value; status sits in its own pill
+       column. Numbers are tabular and right-aligned.
+       ============================================================ */
+    table.editorial { width: 100%; border-collapse: collapse; }
+    table.editorial thead th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    table.editorial th.r, table.editorial td.r { text-align: right; }
+    table.editorial tbody td {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.95rem;
+    }
+    table.editorial tbody tr:last-child td { border-bottom: 0; }
+    table.editorial tr.row-hi td { background: var(--hi-bg-soft); }
+    table.editorial tr.row-lo td { background: var(--lo-bg-soft); }
+    table.editorial .analyte { font-weight: 600; }
+    table.editorial .analyte small { display: block; font-weight: 400; color: var(--muted); font-size: 0.78rem; }
+    table.editorial .result { font-weight: 700; font-size: 1.02rem; }
+    table.editorial tr.row-hi .result { color: var(--hi); }
+    table.editorial tr.row-lo .result { color: var(--lo); }
+    table.editorial .result small { font-weight: 500; color: var(--muted); font-size: 0.8rem; margin-left: 3px; }
+    table.editorial .ref, table.editorial .method { color: var(--muted); }
+    table.editorial tr.note-row td { padding-top: 0; }
+    table.editorial tr.note-row td .inner {
+      padding: 10px 14px;
+      background: var(--lo-bg-soft);
+      border-left: 3px solid var(--lo);
+      border-radius: 8px;
+    }
+
+    /* ============================================================
+       OPTION 2 — Range-gauge table
+       A dedicated column draws each value on its reference interval:
+       green band = normal zone, a dot = the result. In/out of range
+       is obvious before you read a number.
+       ============================================================ */
+    table.gauge { width: 100%; border-collapse: collapse; }
+    table.gauge thead th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    table.gauge th.r, table.gauge td.r { text-align: right; }
+    table.gauge tbody td {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.95rem;
+      vertical-align: middle;
+    }
+    table.gauge tbody tr:last-child td { border-bottom: 0; }
+    table.gauge .analyte { font-weight: 600; }
+    table.gauge .analyte small { display: block; font-weight: 400; color: var(--muted); font-size: 0.78rem; }
+    table.gauge .result { font-weight: 700; }
+    table.gauge .result small { font-weight: 500; color: var(--muted); font-size: 0.78rem; }
+    .gauge-cell { width: 42%; min-width: 220px; }
+    .track {
+      position: relative;
+      height: 10px;
+      background: #eef0f3;
+      border-radius: 999px;
+    }
+    .track .band {
+      position: absolute; top: 0; bottom: 0;
+      background: var(--ok-bg);
+      border-left: 2px solid var(--ok);
+      border-right: 2px solid var(--ok);
+      border-radius: 3px;
+    }
+    .track .pin {
+      position: absolute; top: 50%;
+      width: 16px; height: 16px; border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 1px var(--line-strong), 0 1px 3px rgba(0,0,0,.18);
+    }
+    .track .pin.ok { background: var(--ok); }
+    .track .pin.hi { background: var(--hi); }
+    .track .pin.lo { background: var(--lo); }
+    .ticks {
+      display: flex; justify-content: space-between;
+      font-size: 0.68rem; color: var(--muted);
+      margin-top: 7px; font-variant-numeric: tabular-nums;
+    }
+    table.gauge tr.note-row td { padding-top: 0; }
+    table.gauge tr.note-row .inner {
+      padding: 10px 14px; background: var(--lo-bg-soft);
+      border-left: 3px solid var(--lo); border-radius: 8px;
+    }
+
+    /* ============================================================
+       OPTION 3 — Triage dashboard
+       Scan-by-status: a summary strip, then out-of-range markers
+       called out at the top, then the in-range list. Same columns,
+       reordered around what needs attention.
+       ============================================================ */
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .summary .stat {
+      padding: 22px 24px;
+      border-right: 1px solid var(--line);
+    }
+    .summary .stat:last-child { border-right: 0; }
+    .summary .stat .n { font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+    .summary .stat.ok .n { color: var(--ok); }
+    .summary .stat.attn .n { color: var(--hi); }
+    .summary .stat .lbl { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+
+    .group { border-top: 1px solid var(--line); }
+    .group-title {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 24px;
+      font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .group-title .badge {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0;
+      padding: 1px 9px; border-radius: 999px;
+    }
+    .group-title .badge.attn { background: var(--hi-bg); color: var(--hi); }
+    .group-title .badge.ok { background: var(--ok-bg); color: var(--ok); }
+
+    .trow {
+      display: grid;
+      grid-template-columns: 14px 1fr auto auto;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 24px;
+      border-top: 1px solid var(--line);
+    }
+    .trow .lamp { width: 10px; height: 10px; border-radius: 50%; }
+    .lamp.ok { background: var(--ok); }
+    .lamp.hi { background: var(--hi); }
+    .lamp.lo { background: var(--lo); }
+    .trow .who .name { font-weight: 600; }
+    .trow .who .meta { font-size: 0.78rem; color: var(--muted); }
+    .trow .res { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+    .trow .res small { font-weight: 500; color: var(--muted); font-size: 0.78rem; }
+    .trow.attn-row { background: var(--hi-bg-soft); }
+    .trow.attn-row.is-lo { background: var(--lo-bg-soft); }
+    .trow .res .delta { font-size: 0.74rem; font-weight: 700; }
+    .trow.is-hi .res .delta { color: var(--hi); }
+    .trow.is-lo .res .delta { color: var(--lo); }
+    .group-foot { padding: 12px 24px 18px; }
+
+    .footnote { margin-top: 16px; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <p class="kicker">Table redesign</p>
+      <h1>Lab results, made scannable</h1>
+      <p>
+        One report, three table treatments — each keeps every field (analyte,
+        result, method, reference range, unit) and adds a clear in-range
+        indicator so the eye lands on what matters first.
+      </p>
+      <div class="legend">
+        <span class="swatch"><i class="key ok"></i> <b>In range</b></span>
+        <span class="swatch"><i class="key hi"></i> <b>Above range</b></span>
+        <span class="swatch"><i class="key lo"></i> <b>Below range</b></span>
+      </div>
+    </header>
+
+    <!-- OPTION 1 -->
+    <section class="variant">
+      <div class="variant-head">
+        <span class="num">Option 1</span>
+        <h2>Editorial table</h2>
+        <p>
+          Calm and spacious. Hairline rules, tabular right-aligned numbers, and a
+          dedicated status pill. Out-of-range rows pick up a faint tint and a
+          coloured value so they surface without shouting.
+        </p>
+      </div>
+      <div class="surface">
+        <div class="surface-head">
+          <h3>Bloodwork panel</h3>
+          <span class="sample">Serum</span>
+        </div>
+        <table class="editorial">
+          <thead>
+            <tr>
+              <th>Analyte</th>
+              <th class="r">Result</th>
+              <th>Reference</th>
+              <th>Method</th>
+              <th class="r">Status</th>
+            </tr>
+          </thead>
+          <tbody id="ed-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- OPTION 2 -->
+    <section class="variant">
+      <div class="variant-head">
+        <span class="num">Option 2</span>
+        <h2>Range-gauge table</h2>
+        <p>
+          A visual column. Each value is plotted on its own reference interval —
+          the green band is the normal zone, the dot is the result. You see in or
+          out of range before reading a single number.
+        </p>
+      </div>
+      <div class="surface">
+        <div class="surface-head">
+          <h3>Bloodwork panel</h3>
+          <span class="sample">Serum</span>
+        </div>
+        <table class="gauge">
+          <thead>
+            <tr>
+              <th>Analyte</th>
+              <th class="r">Result</th>
+              <th>Where it sits</th>
+              <th class="r">Status</th>
+            </tr>
+          </thead>
+          <tbody id="ga-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- OPTION 3 -->
+    <section class="variant">
+      <div class="variant-head">
+        <span class="num">Option 3</span>
+        <h2>Triage dashboard</h2>
+        <p>
+          Scan by status. A summary strip up top, the markers that need attention
+          called out first, then everything that's in range. Same data, reordered
+          around what to look at.
+        </p>
+      </div>
+      <div class="surface">
+        <div class="summary">
+          <div class="stat"><div class="n" id="s-total">0</div><div class="lbl">Markers tested</div></div>
+          <div class="stat ok"><div class="n" id="s-ok">0</div><div class="lbl">In range</div></div>
+          <div class="stat attn"><div class="n" id="s-attn">0</div><div class="lbl">Need attention</div></div>
+        </div>
+        <div class="group" id="g-attn"></div>
+        <div class="group" id="g-ok"></div>
+      </div>
+      <p class="footnote" id="g-note"></p>
+    </section>
+  </main>
+
+  <script>
+    /* ----------------------------------------------------------------
+       The report, transcribed exactly from the source (sample: Serum).
+       Decimal commas are preserved for display; `n` is the numeric value
+       used for the gauge maths. refType: 'range' | 'max' (do X).
+       ---------------------------------------------------------------- */
+    const DATA = [
+      { name: 'hsTSH', n: 1.71, disp: '1,71', method: 'CMIA', lo: 0.35, hi: 4.94, refType: 'range', ref: '0,35 – 4,94', unit: 'µIU/mL' },
+      { name: 'Slobodni T4', en: 'Free T4', n: 12.7, disp: '12,7', method: 'CMIA', lo: 9.01, hi: 19.05, refType: 'range', ref: '9,01 – 19,05', unit: 'pmol/L' },
+      { name: 'Estradiol', n: 20, disp: '< 20,0', method: 'CMIA', lo: null, hi: 56.0, refType: 'max', ref: 'do 56,0', unit: 'pg/mL', below: true },
+      { name: 'Testosteron uk.', en: 'Total testosterone', n: 32.2, disp: '32,2', method: 'CMIA', lo: 7.66, hi: 24.82, refType: 'range', ref: '7,66 – 24,82', unit: 'nmol/L',
+        note: 'Primena leka Deca-Durabolin (Nandrolon®) može da utiče na nivo testosterona u krvi.' },
+      { name: 'Ukupni PSA', en: 'Total PSA', n: 0.334, disp: '0,334', method: 'CMIA', lo: null, hi: 3.5, refType: 'max', ref: 'do 3,5', unit: 'ng/mL' },
+      { name: 'Homocystein', n: 8.77, disp: '8,77', method: 'CMIA', lo: 5.5, hi: 16.2, refType: 'range', ref: '5,5 – 16,2', unit: 'µmol/L' },
+      { name: 'Vitamin B12', n: 810.8, disp: '810,8', method: 'ECLIA', lo: 197.0, hi: 771.0, refType: 'range', ref: '197,0 – 771,0', unit: 'pg/mL' },
+      { name: 'Feritin', en: 'Ferritin', n: 87.7, disp: '87,7', method: 'ECLIA', lo: 30.0, hi: 400.0, refType: 'range', ref: '30,0 – 400,0', unit: 'ng/mL' },
+      { name: 'Vitamin 25-OH D', n: 61.1, disp: '61,1', method: 'CMIA', lo: 50.0, hi: 150.0, refType: 'range', ref: '50,0 – 150,0', unit: 'nmol/L' },
+    ];
+
+    const TESTO_NOTE = DATA.find((d) => d.note).note;
+
+    function statusOf(d) {
+      if (d.below) return 'ok';                  // "< 20,0" against "up to 56" => in range
+      if (d.hi != null && d.n > d.hi) return 'hi';
+      if (d.lo != null && d.n < d.lo) return 'lo';
+      return 'ok';
+    }
+    const LABEL = { ok: 'In range', hi: 'Above', lo: 'Below' };
+    const ARROW = { hi: '↑', lo: '↓', ok: '' };
+    const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const enTag = (d) => (d.en ? `<small>${esc(d.en)}</small>` : '');
+
+    /* ---------------- Option 1: editorial table ---------------- */
+    (function () {
+      const tb = document.getElementById('ed-body');
+      let html = '';
+      DATA.forEach((d) => {
+        const s = statusOf(d);
+        html += `<tr class="row-${s}">
+          <td class="analyte">${esc(d.name)}${enTag(d)}</td>
+          <td class="r"><span class="result num">${esc(d.disp)}<small>${esc(d.unit)}</small></span></td>
+          <td class="ref num">${esc(d.ref)}</td>
+          <td class="method">${esc(d.method)}</td>
+          <td class="r"><span class="pill ${s}">${s !== 'ok' ? `<span class="arrow">${ARROW[s]}</span>` : ''}${LABEL[s]}</span></td>
+        </tr>`;
+        if (d.note) {
+          html += `<tr class="note-row row-${s}"><td colspan="5"><div class="inner note"><span class="mark">⚠</span>${esc(d.note)}</div></td></tr>`;
+        }
+      });
+      tb.innerHTML = html;
+    })();
+
+    /* ---------------- Option 2: range-gauge table ---------------- */
+    (function () {
+      const tb = document.getElementById('ga-body');
+      let html = '';
+      DATA.forEach((d) => {
+        const s = statusOf(d);
+        const lo = d.lo != null ? d.lo : 0;
+        const hi = d.hi != null ? d.hi : d.n * 1.2;
+        const span = (hi - lo) || Math.abs(hi) || 1;
+        const min = Math.min(lo, d.n) - span * 0.3;
+        const max = Math.max(hi, d.n) + span * 0.3;
+        const at = (v) => Math.max(4, Math.min(96, ((v - min) / (max - min)) * 100));
+        const bandL = at(lo), bandR = at(hi);
+        const lowTick = d.refType === 'max' ? '0' : String(d.lo).replace('.', ',');
+        const hiTick = String(d.hi).replace('.', ',');
+        html += `<tr>
+          <td class="analyte">${esc(d.name)}${enTag(d)}</td>
+          <td class="r"><span class="result num">${esc(d.disp)} <small>${esc(d.unit)}</small></span></td>
+          <td class="gauge-cell">
+            <div class="track">
+              <span class="band" style="left:${bandL}%;width:${bandR - bandL}%"></span>
+              <span class="pin ${s}" style="left:${at(d.n)}%"></span>
+            </div>
+            <div class="ticks"><span>${lowTick}</span><span>${hiTick}</span></div>
+          </td>
+          <td class="r"><span class="pill ${s}">${s !== 'ok' ? `<span class="arrow">${ARROW[s]}</span>` : ''}${LABEL[s]}</span></td>
+        </tr>`;
+        if (d.note) {
+          html += `<tr class="note-row"><td colspan="4"><div class="inner note"><span class="mark" style="color:var(--lo);font-weight:700;margin-right:4px">⚠</span>${esc(d.note)}</div></td></tr>`;
+        }
+      });
+      tb.innerHTML = html;
+    })();
+
+    /* ---------------- Option 3: triage dashboard ---------------- */
+    (function () {
+      const attn = DATA.filter((d) => statusOf(d) !== 'ok');
+      const ok = DATA.filter((d) => statusOf(d) === 'ok');
+      document.getElementById('s-total').textContent = DATA.length;
+      document.getElementById('s-ok').textContent = ok.length;
+      document.getElementById('s-attn').textContent = attn.length;
+
+      const row = (d, emphasize) => {
+        const s = statusOf(d);
+        return `<div class="trow is-${s} ${emphasize ? 'attn-row' : ''}">
+          <span class="lamp ${s}"></span>
+          <span class="who">
+            <span class="name">${esc(d.name)}${d.en ? ` · ${esc(d.en)}` : ''}</span>
+            <span class="meta">Ref ${esc(d.ref)} · ${esc(d.method)}</span>
+          </span>
+          <span class="res">${esc(d.disp)} <small>${esc(d.unit)}</small>${s !== 'ok' ? ` <span class="delta">${ARROW[s]} out</span>` : ''}</span>
+          <span><span class="pill ${s}">${LABEL[s]}</span></span>
+        </div>`;
+      };
+
+      let attnHtml = `<div class="group-title">Needs attention <span class="badge attn">${attn.length}</span></div>`;
+      attnHtml += attn.map((d) => row(d, true)).join('');
+      document.getElementById('g-attn').innerHTML = attnHtml;
+
+      let okHtml = `<div class="group-title">In range <span class="badge ok">${ok.length}</span></div>`;
+      okHtml += ok.map((d) => row(d, false)).join('');
+      document.getElementById('g-ok').innerHTML = okHtml;
+
+      document.getElementById('g-note').textContent = '⚠ ' + TESTO_NOTE;
+    })();
+  </script>
+</body>
+</html>
