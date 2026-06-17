@@ -97,8 +97,11 @@ export default function Dashboard({ reports, onOpenMarker }) {
 
       <div className="report-sheet">
         <div className="sheet-summary">
-          <div className="stat-summary">
-            <div className="stat-col">
+          <div className="stat-summary" role="group" aria-label="Filter by status">
+            <button
+              className={`stat-col all ${status === 'all' ? 'active' : ''}`}
+              onClick={() => setStatus('all')}
+            >
               <span className="stat-ic blue">
                 <IconFlask size={18} />
               </span>
@@ -106,8 +109,11 @@ export default function Dashboard({ reports, onOpenMarker }) {
                 <small>Markers</small>
                 <strong>{total}</strong>
               </span>
-            </div>
-            <div className="stat-col">
+            </button>
+            <button
+              className={`stat-col in ${status === 'in' ? 'active' : ''}`}
+              onClick={() => setStatus('in')}
+            >
               <span className="stat-ic green">
                 <IconCheckCircle size={18} />
               </span>
@@ -115,8 +121,11 @@ export default function Dashboard({ reports, onOpenMarker }) {
                 <small>In range</small>
                 <strong className="green">{inN}</strong>
               </span>
-            </div>
-            <div className="stat-col">
+            </button>
+            <button
+              className={`stat-col out ${status === 'out' ? 'active' : ''}`}
+              onClick={() => setStatus('out')}
+            >
               <span className="stat-ic red">
                 <IconArrowUp size={18} />
               </span>
@@ -124,7 +133,7 @@ export default function Dashboard({ reports, onOpenMarker }) {
                 <small>Out of range</small>
                 <strong className="red">{outN}</strong>
               </span>
-            </div>
+            </button>
           </div>
 
           <div className="controls">
@@ -136,14 +145,6 @@ export default function Dashboard({ reports, onOpenMarker }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
-            </div>
-            <div className="status-filter">
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="all">All statuses</option>
-                <option value="in">In range</option>
-                <option value="out">Out of range</option>
-              </select>
-              <span className="status-chev">▾</span>
             </div>
           </div>
         </div>
