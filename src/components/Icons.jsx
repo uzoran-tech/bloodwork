@@ -103,6 +103,13 @@ export const IconVial = (p) => (
   </I>
 )
 
+export const IconSearch = (p) => (
+  <I {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3" />
+  </I>
+)
+
 export const IconClose = (p) => (
   <I {...p}>
     <path d="M18 6L6 18M6 6l12 12" />
