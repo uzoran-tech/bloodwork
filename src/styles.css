@@ -2833,3 +2833,202 @@ code {
   color: #5d6675;
   background: #e9edf3;
 }
+
+/* ============================================================
+   Results — match the reference: 3-stat card, filter chips,
+   outlined status pills, flat list, sample line, footer note.
+   ============================================================ */
+
+.sample-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5d6675;
+}
+
+.sample-line strong {
+  color: #1f2c45;
+  font-weight: 700;
+}
+
+.sample-line .sample-lab {
+  color: #8a93a3;
+  font-weight: 600;
+}
+
+.sample-line svg {
+  color: #9aa3b2;
+}
+
+/* Three-stat summary card */
+.stat-summary {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #e4e8ee;
+  border-radius: 18px;
+  background: #fff;
+  margin-top: 16px;
+}
+
+.stat-col {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 10px;
+  min-width: 0;
+}
+
+.stat-col + .stat-col {
+  border-left: 1px solid #edf0f4;
+}
+
+.stat-ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.stat-ic.blue {
+  background: #e8eefb;
+  color: #5870ae;
+}
+
+.stat-ic.green {
+  background: #e3f5ec;
+  color: #2a8c6b;
+}
+
+.stat-ic.red {
+  background: #fbeae7;
+  color: #c0524a;
+}
+
+.stat-tx {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stat-tx small {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7b8495;
+  line-height: 1.2;
+}
+
+.stat-tx strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1f2c45;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+.stat-tx strong.green {
+  color: #2a8c6b;
+}
+
+.stat-tx strong.red {
+  color: #c0524a;
+}
+
+/* Filter chips */
+.filter-chips {
+  display: flex;
+  gap: 9px;
+  margin-top: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filter-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chips button {
+  flex: none;
+  border: 1px solid #dde3ea;
+  background: #fff;
+  border-radius: 14px;
+  padding: 11px 16px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #2b3a55;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-chips button.active {
+  background: #1b2741;
+  border-color: #1b2741;
+  color: #fff;
+}
+
+/* Flat marker list */
+.mk-list {
+  margin-top: 18px;
+  border-top: 1px solid #edf0f4;
+}
+
+.mk-empty {
+  padding: 26px 20px;
+  text-align: center;
+  color: #8a93a3;
+  font-size: 14px;
+}
+
+/* Outlined status pills with icon (override the filled style) */
+.mk-pill {
+  border: 1px solid transparent;
+  padding: 4px 11px 4px 8px;
+  gap: 5px;
+}
+
+.mk-pill svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mk-pill.normal {
+  background: #eef9f3;
+  border-color: #cdeadb;
+  color: #2a8c6b;
+}
+
+.mk-pill.high {
+  background: #fceeeb;
+  border-color: #f4d2cb;
+  color: #c0524a;
+}
+
+.mk-pill.low {
+  background: #eaf0fb;
+  border-color: #d2ddf2;
+  color: #4f6bb0;
+}
+
+/* Footer note */
+.sheet-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 20px 20px calc(22px + env(safe-area-inset-bottom));
+  color: #8a93a3;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.sheet-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: #aab2bf;
+}
