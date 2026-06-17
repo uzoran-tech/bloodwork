@@ -63,6 +63,46 @@ export const IconBell = (p) => (
   </I>
 )
 
+export const IconFlask = (p) => (
+  <I {...p}>
+    <path d="M9 3h6M10 3v5.5L4.7 18A2 2 0 0 0 6.5 21h11A2 2 0 0 0 19.3 18L14 8.5V3" />
+    <path d="M8 14h8" />
+  </I>
+)
+
+export const IconCheckCircle = (p) => (
+  <I {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.4 12.4l2.4 2.4 4.8-5.2" />
+  </I>
+)
+
+export const IconArrowUp = (p) => (
+  <I {...p}>
+    <path d="M12 19V6M6 12l6-6 6 6" />
+  </I>
+)
+
+export const IconArrowDown = (p) => (
+  <I {...p}>
+    <path d="M12 5v13M6 12l6 6 6-6" />
+  </I>
+)
+
+export const IconInfo = (p) => (
+  <I {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 16.5v-5M12 8h.01" />
+  </I>
+)
+
+export const IconVial = (p) => (
+  <I {...p}>
+    <path d="M7 3h10M9 3v13a3 3 0 0 0 6 0V3" />
+    <path d="M9 9h6" />
+  </I>
+)
+
 export const IconClose = (p) => (
   <I {...p}>
     <path d="M18 6L6 18M6 6l12 12" />
