@@ -6,42 +6,42 @@
 
 :root,
 :root[data-theme='light'] {
-  --bg: #f5f5fa;
+  --bg: #eaeef4;
   --card: #ffffff;
-  --line: #ebecf3;
-  --text: #14152b;
-  --muted: #8b8da3;
-  --accent: #5b5bf0;
-  --accent-2: #8b5cf6;
-  --grad: linear-gradient(140deg, #5a67f2 0%, #7c5cf0 55%, #9251f0 100%);
+  --line: #e4e8ee;
+  --text: #1f2c45;
+  --muted: #7b8495;
+  --accent: #2f405e;
+  --accent-2: #3a4f74;
+  --grad: #2f405e;
   --on-grad: #ffffff;
   --on-grad-dim: rgba(255, 255, 255, 0.72);
-  --red: #e8554d;
-  --green: #18a87b;
-  --blue: #4f8df7;
-  --amber: #e8960c;
-  --tint-rose: #fdeeee;
-  --tint-teal: #e4f6f1;
-  --tint-lav: #f0ecfd;
+  --red: #c0524a;
+  --green: #2a8c6b;
+  --blue: #4f6bb0;
+  --amber: #cf820a;
+  --tint-rose: #fbeae7;
+  --tint-teal: #e3f5ec;
+  --tint-lav: #eef1f6;
   --tint-amber: #fdf3dd;
-  --tint-blue: #e8f0fe;
-  --on-rose: #d6453c;
-  --on-teal: #119077;
-  --on-lav: #7c5cf0;
+  --tint-blue: #eaf0fb;
+  --on-rose: #c0524a;
+  --on-teal: #2a8c6b;
+  --on-lav: #5d6675;
   --on-amber: #cf820a;
-  --on-blue: #3a78e0;
-  --band: rgba(24, 168, 123, 0.1);
-  --dash: rgba(20, 21, 43, 0.22);
-  --chrome: rgba(255, 255, 255, 0.86);
+  --on-blue: #4f6bb0;
+  --band: rgba(42, 140, 107, 0.1);
+  --dash: rgba(31, 44, 69, 0.22);
+  --chrome: rgba(255, 255, 255, 0.9);
   --sheet: #ffffff;
-  --dark-card: #221c33;
-  --shadow: 0 2px 4px rgba(35, 33, 91, 0.04), 0 10px 28px rgba(35, 33, 91, 0.07);
-  --shadow-pop: 0 8px 18px rgba(35, 33, 91, 0.1), 0 22px 48px rgba(35, 33, 91, 0.12);
-  --badge-green-bg: #ddf3e9;
-  --badge-red-bg: #fde5e3;
-  --badge-blue-bg: #e3edfd;
+  --dark-card: #1f2c45;
+  --shadow: 0 1px 2px rgba(31, 44, 69, 0.04), 0 10px 26px rgba(31, 44, 69, 0.06);
+  --shadow-pop: 0 10px 24px rgba(31, 44, 69, 0.1);
+  --badge-green-bg: #e3f5ec;
+  --badge-red-bg: #fbeae7;
+  --badge-blue-bg: #eaf0fb;
   --badge-amber-bg: #fdf0d4;
-  --sans: 'Baloo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 :root[data-theme='dark'] {
@@ -3121,4 +3121,66 @@ code {
   font-size: 13px;
   font-weight: 600;
   color: #8a93a3;
+}
+
+/* ============================================================
+   Status chips + stacked pill/date; design language on all pages
+   ============================================================ */
+
+/* Stack the status pill and last-drawn date under the name */
+.mk-meta {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+/* Segmented control active text */
+.seg button.active {
+  color: #fff;
+}
+
+/* Reports header: light, matching the homepage top (no colored band) */
+.reports .hero {
+  background: transparent;
+  color: var(--text);
+  border-radius: 0;
+  padding: calc(20px + env(safe-area-inset-top)) 20px 4px;
+}
+
+.reports .hero-greet {
+  color: var(--muted);
+}
+
+.reports .hero h2 {
+  color: var(--text);
+}
+
+/* Clickable stat columns = status filter (replaces the chips) */
+.stat-summary {
+  overflow: hidden;
+}
+
+.stat-col {
+  background: none;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.stat-col.active.all {
+  background: #eef1f6;
+}
+
+.stat-col.active.in {
+  background: #e8f6ef;
+}
+
+.stat-col.active.out {
+  background: #fcefec;
+}
+
+.stat-col:active {
+  background: #f1f4f8;
 }
