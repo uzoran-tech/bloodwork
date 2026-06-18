@@ -1,14 +1,14 @@
-import { statusOf } from '../catalog.js'
+import { statusOf, refRange } from '../catalog.js'
 
 const COLORS = { normal: '#34c98e', low: '#5aa9ff', high: '#ff6b5e' }
 
-function scale(series, marker, w, h, pad) {
+function scale(series, band, w, h, pad) {
   const xs = series.map((p) => new Date(p.date).getTime())
   const ys = series.map((p) => p.value)
   let yMin = Math.min(...ys)
   let yMax = Math.max(...ys)
-  if (marker.lo != null) yMin = Math.min(yMin, marker.lo)
-  if (marker.hi != null) yMax = Math.max(yMax, marker.hi)
+  if (band.lo != null) yMin = Math.min(yMin, band.lo)
+  if (band.hi != null) yMax = Math.max(yMax, band.hi)
   const ySpan = yMax - yMin || 1
   yMin -= ySpan * 0.12
   yMax += ySpan * 0.12
@@ -21,14 +21,16 @@ function scale(series, marker, w, h, pad) {
 
 export function Sparkline({ series, marker, width = 120, height = 36, className = '' }) {
   if (series.length === 0) return null
-  const { x, y } = scale(series, marker, width, height, 4)
-  const pts = series.map((p) => `${x(new Date(p.date).getTime()).toFixed(1)},${y(p.value).toFixed(1)}`)
   const last = series[series.length - 1]
-  const color = COLORS[statusOf(marker, last.value)]
+  // Reference band from the most recent report's range (catalog as fallback).
+  const band = refRange(marker, last.range)
+  const { x, y } = scale(series, band, width, height, 4)
+  const pts = series.map((p) => `${x(new Date(p.date).getTime()).toFixed(1)},${y(p.value).toFixed(1)}`)
+  const color = COLORS[statusOf(marker, last.value, last.range)]
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={`sparkline ${className}`} aria-hidden>
-      {marker.lo != null && marker.hi != null && (
-        <rect x={0} y={y(marker.hi)} width={width} height={Math.max(0, y(marker.lo) - y(marker.hi))} fill="var(--band)" />
+      {band.lo != null && band.hi != null && (
+        <rect x={0} y={y(band.hi)} width={width} height={Math.max(0, y(band.lo) - y(band.hi))} fill="var(--band)" />
       )}
       {series.length > 1 && (
         <polyline points={pts.join(' ')} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
@@ -41,30 +43,32 @@ export function Sparkline({ series, marker, width = 120, height = 36, className 
 export function TrendChart({ series, marker, width = 640, height = 260 }) {
   if (series.length === 0) return null
   const pad = 30
-  const { x, y } = scale(series, marker, width, height, pad)
+  const last = series[series.length - 1]
+  // Reference band from the most recent report's range (catalog as fallback).
+  const band = refRange(marker, last.range)
+  const { x, y } = scale(series, band, width, height, pad)
   const pts = series.map((p) => ({
     cx: x(new Date(p.date).getTime()),
     cy: y(p.value),
     ...p,
   }))
-  const last = series[series.length - 1]
 
-  const bandTop = marker.hi != null ? y(marker.hi) : pad
-  const bandBottom = marker.lo != null ? y(marker.lo) : height - pad
+  const bandTop = band.hi != null ? y(band.hi) : pad
+  const bandBottom = band.lo != null ? y(band.lo) : height - pad
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="trend-chart">
       <rect x={pad} y={bandTop} width={width - pad * 2} height={Math.max(0, bandBottom - bandTop)} fill="rgba(52,201,142,0.10)" />
-      {marker.hi != null && (
+      {band.hi != null && (
         <>
-          <line x1={pad} x2={width - pad} y1={y(marker.hi)} y2={y(marker.hi)} stroke="var(--dash)" strokeDasharray="4 4" />
-          <text x={width - pad} y={y(marker.hi) - 5} textAnchor="end" className="chart-label">{marker.hi}</text>
+          <line x1={pad} x2={width - pad} y1={y(band.hi)} y2={y(band.hi)} stroke="var(--dash)" strokeDasharray="4 4" />
+          <text x={width - pad} y={y(band.hi) - 5} textAnchor="end" className="chart-label">{band.hi}</text>
         </>
       )}
-      {marker.lo != null && (
+      {band.lo != null && (
         <>
-          <line x1={pad} x2={width - pad} y1={y(marker.lo)} y2={y(marker.lo)} stroke="var(--dash)" strokeDasharray="4 4" />
-          <text x={width - pad} y={y(marker.lo) + 14} textAnchor="end" className="chart-label">{marker.lo}</text>
+          <line x1={pad} x2={width - pad} y1={y(band.lo)} y2={y(band.lo)} stroke="var(--dash)" strokeDasharray="4 4" />
+          <text x={width - pad} y={y(band.lo) + 14} textAnchor="end" className="chart-label">{band.lo}</text>
         </>
       )}
       {series.length > 1 && (
@@ -87,7 +91,7 @@ export function TrendChart({ series, marker, width = 640, height = 260 }) {
             cx={p.cx}
             cy={p.cy}
             r={i === pts.length - 1 ? 5 : 3.5}
-            fill={COLORS[statusOf(marker, p.value)]}
+            fill={COLORS[statusOf(marker, p.value, p.range)]}
             stroke="var(--card)"
             strokeWidth="1.5"
           />

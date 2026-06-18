@@ -22,7 +22,7 @@ export const sortByDate = (reports) => [...reports].sort((a, b) => a.date.locale
 export function seriesFor(reports, markerId) {
   return sortByDate(reports)
     .filter((r) => r.values[markerId] != null)
-    .map((r) => ({ date: r.date, value: r.values[markerId] }))
+    .map((r) => ({ date: r.date, value: r.values[markerId], range: r.ranges?.[markerId] ?? null }))
 }
 
 export function trackedMarkers(reports) {
@@ -38,11 +38,18 @@ export function mergeReport(reports, report) {
   if (existing) {
     return reports.map((r) =>
       r.date === report.date
-        ? { ...r, lab: report.lab || r.lab, sample: report.sample || r.sample, notes: report.notes || r.notes, values: { ...r.values, ...report.values } }
+        ? {
+            ...r,
+            lab: report.lab || r.lab,
+            sample: report.sample || r.sample,
+            notes: report.notes || r.notes,
+            values: { ...r.values, ...report.values },
+            ranges: { ...(r.ranges || {}), ...(report.ranges || {}) },
+          }
         : r
     )
   }
-  return [...reports, { id: `r${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ...report }]
+  return [...reports, { id: `r${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ranges: {}, ...report }]
 }
 
 // CSV: header optional, rows of "date,marker,value[,unit]". Accepts marker ids,

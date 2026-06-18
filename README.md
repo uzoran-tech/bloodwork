@@ -49,6 +49,7 @@ One-time setup:
      sample text not null default '',
      notes text not null default '',
      values jsonb not null default '{}'::jsonb,
+     ranges jsonb not null default '{}'::jsonb,
      created_at timestamptz not null default now(),
      unique (user_id, date)
    );
@@ -65,6 +66,18 @@ One-time setup:
    grant usage on schema public to anon, authenticated;
    grant select, insert, update, delete on table public.reports to anon, authenticated;
    ```
+
+   **Already created the table before this column existed?** Add it once:
+
+   ```sql
+   alter table public.reports add column if not exists ranges jsonb not null default '{}'::jsonb;
+   ```
+
+   `ranges` stores each report's own printed reference range per marker (e.g.
+   `{"urea": {"lo": 3.0, "hi": 9.2}}`), so a value is judged against the lab's
+   range rather than a generic default. The app tolerates the column being
+   absent (it falls back to the catalog range), but interpretation is only
+   correct once it's added and reports are re-imported.
 
 3. **Auth → URL Configuration**: set **Site URL** to your deployed URL
    (`https://<you>.github.io/bloodwork/`) and add it to **Redirect URLs**

@@ -102,7 +102,7 @@ export default function Reports({ reports, refresh, onAdd, onSignOut }) {
           const statuses = new Set(
             entries.map(([id, v]) => {
               const m = markerById(id)
-              return m ? statusOf(m, v) : 'normal'
+              return m ? statusOf(m, v, r.ranges?.[id]) : 'normal'
             })
           )
           const isOpen = open === r.id
@@ -135,6 +135,7 @@ export default function Reports({ reports, refresh, onAdd, onSignOut }) {
                       {entries.map(([id, v]) => {
                         const m = markerById(id)
                         if (!m) return null
+                        const range = r.ranges?.[id]
                         return (
                           <tr key={id}>
                             <td>{m.name}</td>
@@ -142,7 +143,7 @@ export default function Reports({ reports, refresh, onAdd, onSignOut }) {
                               {v} {m.unit}
                             </td>
                             <td>
-                              <span className={`badge ${statusOf(m, v)}`}>{statusOf(m, v)}</span>
+                              <span className={`badge ${statusOf(m, v, range)}`}>{statusOf(m, v, range)}</span>
                             </td>
                           </tr>
                         )
