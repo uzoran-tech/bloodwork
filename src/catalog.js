@@ -93,16 +93,29 @@ export function matchMarker(text) {
   return null
 }
 
-export function statusOf(marker, value) {
-  if (marker.lo != null && value < marker.lo) return 'low'
-  if (marker.hi != null && value > marker.hi) return 'high'
+// The reference range to interpret a value against: the one printed on the
+// report (when import captured it) always wins; otherwise the catalog default.
+// A report range is { lo, hi } with either side null for a one-sided range.
+export function refRange(marker, range) {
+  if (range && (range.lo != null || range.hi != null)) {
+    return { lo: range.lo ?? null, hi: range.hi ?? null }
+  }
+  return { lo: marker.lo, hi: marker.hi }
+}
+
+export function statusOf(marker, value, range) {
+  const { lo, hi } = refRange(marker, range)
+  if (lo != null && value < lo) return 'low'
+  if (hi != null && value > hi) return 'high'
   return 'normal'
 }
 
-export function rangeLabel(m) {
-  if (m.lo != null && m.hi != null) return `${m.lo}–${m.hi}`
-  if (m.hi != null) return `< ${m.hi}`
-  return `> ${m.lo}`
+export function rangeLabel(m, range) {
+  const { lo, hi } = refRange(m, range)
+  if (lo != null && hi != null) return `${lo}–${hi}`
+  if (hi != null) return `< ${hi}`
+  if (lo != null) return `> ${lo}`
+  return '—'
 }
 
 // Midpoint used to judge whether a change moves toward or away from "ideal".

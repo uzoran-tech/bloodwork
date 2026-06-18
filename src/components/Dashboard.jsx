@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { trackedMarkers, seriesFor } from '../store.js'
-import { statusOf, PANELS, PANEL_ICONS } from '../catalog.js'
+import { statusOf, refRange, PANELS, PANEL_ICONS } from '../catalog.js'
 import {
   IconFlask,
   IconCheckCircle,
@@ -19,14 +19,15 @@ const ST = {
   low: { label: 'Low', Icon: IconArrowDown },
 }
 
-function refLine(m) {
-  if (m.lo != null && m.hi != null) return `Ref. ${m.lo} - ${m.hi}`
-  if (m.hi != null) return `Ref. < ${m.hi}`
-  if (m.lo != null) return `Ref. > ${m.lo}`
+function refLine(m, range) {
+  const { lo, hi } = refRange(m, range)
+  if (lo != null && hi != null) return `Ref. ${lo} - ${hi}`
+  if (hi != null) return `Ref. < ${hi}`
+  if (lo != null) return `Ref. > ${lo}`
   return 'No reference range'
 }
 
-function MarkerRow({ m, v, date, st, onOpen }) {
+function MarkerRow({ m, v, date, st, range, onOpen }) {
   const { label, Icon } = ST[st]
   return (
     <button className="mk-row" onClick={() => onOpen(m.id)}>
@@ -43,7 +44,7 @@ function MarkerRow({ m, v, date, st, onOpen }) {
         <span className={`mk-value ${st}`}>
           {v} <small>{m.unit}</small>
         </span>
-        <span className="mk-ref">{refLine(m)}</span>
+        <span className="mk-ref">{refLine(m, range)}</span>
       </span>
     </button>
   )
@@ -65,7 +66,7 @@ export default function Dashboard({ reports, onOpenMarker }) {
   const rows = trackedMarkers(reports).map((m) => {
     const s = seriesFor(reports, m.id)
     const last = s[s.length - 1]
-    return { m, v: last.value, date: last.date, st: statusOf(m, last.value) }
+    return { m, v: last.value, date: last.date, range: last.range, st: statusOf(m, last.value, last.range) }
   })
 
   const total = rows.length

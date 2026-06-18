@@ -86,6 +86,34 @@ function matchMarkerInLine(line) {
   return best
 }
 
+// The reference range printed alongside the value. European lab sheets write
+// it several ways: two-sided "a - b", one-sided "do b" (≤) / "od a" (≥), or
+// "< b" / "> a". Tiered lipids (LDL) print an "opt: < x" optimal threshold
+// next to a borderline band — prefer the optimal one. Returns { lo, hi } with a
+// null side for one-sided ranges, or null when nothing parseable is found.
+export function extractRange(line) {
+  const s = line.replace(/(\d),(\d)/g, '$1.$2')
+  const num = '(\\d+(?:\\.\\d+)?)'
+  let m = s.match(new RegExp(`opt\\S*\\s*:?\\s*([<>])\\s*${num}`, 'i'))
+  if (m) return m[1] === '<' ? { lo: null, hi: +m[2] } : { lo: +m[2], hi: null }
+  m = s.match(new RegExp(`${num}\\s*[-–]\\s*${num}`))
+  if (m) {
+    let lo = +m[1]
+    let hi = +m[2]
+    if (lo > hi) [lo, hi] = [hi, lo]
+    return { lo, hi }
+  }
+  m = s.match(new RegExp(`\\bdo\\s*${num}`, 'i'))
+  if (m) return { lo: null, hi: +m[1] }
+  m = s.match(new RegExp(`\\bod\\s*${num}`, 'i'))
+  if (m) return { lo: +m[1], hi: null }
+  m = s.match(new RegExp(`<\\s*${num}`))
+  if (m) return { lo: null, hi: +m[1] }
+  m = s.match(new RegExp(`>\\s*${num}`))
+  if (m) return { lo: +m[1], hi: null }
+  return null
+}
+
 function extractValue(line) {
   let s = line.replace(/(\d),(\d)/g, '$1.$2')
   s = s.replace(/\d{1,2}[./]\d{1,2}[./]\d{2,4}/g, ' ') // dates
@@ -174,13 +202,18 @@ export function parseLabLines(lines) {
   const sample = findSample(lines)
 
   const values = {}
+  const ranges = {}
   for (const line of lines) {
     // Skip boilerplate that mentions analyses without carrying results.
     if (/zabranjeno|referentn|akreditovan|kontrol|umnozavanje|fotokopiranje|konsultovati/i.test(line)) continue
     const id = matchMarkerInLine(line)
     if (!id || values[id] != null) continue
     const v = extractValue(line)
-    if (v != null) values[id] = v
+    if (v != null) {
+      values[id] = v
+      const r = extractRange(line)
+      if (r) ranges[id] = r
+    }
   }
-  return { date, values, lab, sample }
+  return { date, values, ranges, lab, sample }
 }

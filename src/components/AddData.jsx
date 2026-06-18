@@ -92,9 +92,9 @@ export default function AddData({ refresh, done }) {
       for (const f of files) {
         try {
           const lines = await extractPdfLines(f)
-          const { date: d, values, lab, sample } = parseLabLines(lines)
+          const { date: d, values, ranges, lab, sample } = parseLabLines(lines)
           if (Object.keys(values).length > 0) {
-            previews.push({ date: d || todayISO(), dateGuess: !d, values, fileName: f.name, lab, sample })
+            previews.push({ date: d || todayISO(), dateGuess: !d, values, ranges, fileName: f.name, lab, sample })
           } else {
             skipped.push(`${f.name} (${lines.length === 0 ? 'no selectable text — a scan or photo' : 'no marker values recognized'})`)
           }
@@ -164,9 +164,9 @@ export default function AddData({ refresh, done }) {
         import('../pdfimport.js'),
       ])
       const lines = await extractPhotoLines(f, setOcrProgress)
-      const { date: d, values, lab, sample } = parseLabLines(lines)
+      const { date: d, values, ranges, lab, sample } = parseLabLines(lines)
       if (Object.keys(values).length > 0) {
-        setPreview({ date: d || todayISO(), dateGuess: !d, values, fileName: f.name || 'photo', source: 'photo', lab, sample })
+        setPreview({ date: d || todayISO(), dateGuess: !d, values, ranges, fileName: f.name || 'photo', source: 'photo', lab, sample })
       } else {
         setFeedback({
           tone: 'warn',
@@ -188,7 +188,7 @@ export default function AddData({ refresh, done }) {
     if (!preview.date) return setFeedback({ tone: 'warn', text: 'Pick the test date first.' })
     setBusy(true)
     try {
-      await saveReport({ date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values })
+      await saveReport({ date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values, ranges: preview.ranges || {} })
       await refresh()
       setFeedback({ tone: 'good', text: `Saved ${Object.keys(preview.values).length} values for ${preview.date}.` })
       advancePreview()
@@ -228,6 +228,7 @@ export default function AddData({ refresh, done }) {
           <tbody>
             {entries.map(([id, v]) => {
               const m = markerById(id)
+              const range = preview.ranges?.[id]
               // Far outside any plausible range — usually OCR losing a decimal
               // separator (2.58 read as 258). Flag it for a second look.
               const suspect = (m.hi != null && v > m.hi * 5) || (m.lo != null && v < m.lo / 5)
@@ -249,7 +250,7 @@ export default function AddData({ refresh, done }) {
                     {v} {m.unit}
                   </td>
                   <td>
-                    <span className={`badge ${statusOf(m, v)}`}>{statusOf(m, v)}</span>
+                    <span className={`badge ${statusOf(m, v, range)}`}>{statusOf(m, v, range)}</span>
                     {suspect && <span title="Far outside the usual range — double-check against the report"> ⚠️</span>}
                   </td>
                 </tr>

@@ -1,5 +1,5 @@
 import { seriesFor } from '../store.js'
-import { markerById, statusOf, rangeLabel, PANEL_ICONS } from '../catalog.js'
+import { markerById, statusOf, rangeLabel, refRange, PANEL_ICONS } from '../catalog.js'
 import { INFO } from '../info.js'
 import { TrendChart } from './Charts.jsx'
 import { IconClose } from './Icons.jsx'
@@ -7,10 +7,11 @@ import { IconClose } from './Icons.jsx'
 // Where the latest value sits relative to the reference band, as a bar with a
 // dot — faster to read than comparing numbers. One-sided ranges get a soft
 // synthetic far bound just for positioning.
-function RangeBar({ m, value }) {
-  if (m.lo == null && m.hi == null) return null
-  const lo = m.lo ?? Math.min(value, m.hi) * 0.5
-  const hi = m.hi ?? Math.max(value, m.lo) * 1.5
+function RangeBar({ m, value, range }) {
+  const { lo: rlo, hi: rhi } = refRange(m, range)
+  if (rlo == null && rhi == null) return null
+  const lo = rlo ?? Math.min(value, rhi) * 0.5
+  const hi = rhi ?? Math.max(value, rlo) * 1.5
   const span = hi - lo || Math.abs(hi) || 1
   const min = lo - span * 0.35
   const max = hi + span * 0.35
@@ -19,11 +20,11 @@ function RangeBar({ m, value }) {
     <div className="range-bar">
       <div className="range-track">
         <div className="range-band" style={{ left: `${at(lo)}%`, width: `${at(hi) - at(lo)}%` }} />
-        <div className={`range-dot ${statusOf(m, value)}`} style={{ left: `${at(value)}%` }} />
+        <div className={`range-dot ${statusOf(m, value, range)}`} style={{ left: `${at(value)}%` }} />
       </div>
       <div className="range-labels">
-        <span>{m.lo != null ? `low < ${m.lo}` : ''}</span>
-        <span>{m.hi != null ? `high > ${m.hi}` : ''}</span>
+        <span>{rlo != null ? `low < ${rlo}` : ''}</span>
+        <span>{rhi != null ? `high > ${rhi}` : ''}</span>
       </div>
     </div>
   )
@@ -61,7 +62,7 @@ export default function MarkerDetail({ markerId, reports, onClose }) {
           <div>
             <h2>{m.name}</h2>
             <span className="muted">
-              {PANEL_ICONS[m.panel]} {m.panel} · reference {rangeLabel(m)} {m.unit}
+              {PANEL_ICONS[m.panel]} {m.panel} · reference {rangeLabel(m, latest.range)} {m.unit}
             </span>
           </div>
           <button className="icon-btn" title="Close" onClick={onClose}>
@@ -76,10 +77,10 @@ export default function MarkerDetail({ markerId, reports, onClose }) {
             </div>
             <span className="muted">Last reading · {latest.date}</span>
           </div>
-          <span className={`badge ${statusOf(m, latest.value)}`}>{statusOf(m, latest.value)}</span>
+          <span className={`badge ${statusOf(m, latest.value, latest.range)}`}>{statusOf(m, latest.value, latest.range)}</span>
         </div>
 
-        <RangeBar m={m} value={latest.value} />
+        <RangeBar m={m} value={latest.value} range={latest.range} />
 
         <TrendChart series={s} marker={m} />
 
@@ -170,7 +171,7 @@ export default function MarkerDetail({ markerId, reports, onClose }) {
                   {p.value} {m.unit}
                 </td>
                 <td>
-                  <span className={`badge ${statusOf(m, p.value)}`}>{statusOf(m, p.value)}</span>
+                  <span className={`badge ${statusOf(m, p.value, p.range)}`}>{statusOf(m, p.value, p.range)}</span>
                 </td>
               </tr>
             ))}
