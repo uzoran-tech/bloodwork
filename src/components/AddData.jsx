@@ -14,6 +14,8 @@ export default function AddData({ refresh, done }) {
   const [feedback, setFeedback] = useState(null)
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState(null) // { date, values, fileName }
+  const [queue, setQueue] = useState([]) // remaining previews when several PDFs are picked at once
+  const [batchTotal, setBatchTotal] = useState(0) // size of the current batch (0/1 = single file)
   const [ocrProgress, setOcrProgress] = useState(null) // 0..1 while reading a photo
   const csvRef = useRef(null)
   const pdfRef = useRef(null)
@@ -77,42 +79,75 @@ export default function AddData({ refresh, done }) {
     e.target.value = ''
   }
 
-  async function onPdfFile(e) {
-    const f = e.target.files?.[0]
+  async function onPdfFiles(e) {
+    const files = Array.from(e.target.files || [])
     e.target.value = ''
-    if (!f) return
+    if (files.length === 0) return
     setBusy(true)
     setFeedback(null)
+    const previews = []
+    const skipped = [] // "<name> (<reason>)" for files we couldn't read values from
     try {
       const { extractPdfLines, parseLabLines } = await import('../pdfimport.js')
-      const lines = await extractPdfLines(f)
-      const { date: d, values, lab, sample } = parseLabLines(lines)
-      if (Object.keys(values).length > 0) {
-        setPreview({ date: d || todayISO(), dateGuess: !d, values, fileName: f.name, lab, sample })
-      } else if (lines.length === 0) {
-        setFeedback({
-          tone: 'warn',
-          text: 'This PDF has no selectable text — it is probably a scan or photo. Try CSV or manual entry — or send the PDF to your assistant to convert.',
-        })
-      } else {
-        setFeedback({
-          tone: 'warn',
-          text: 'Read the PDF but did not recognize any marker values in it. Try CSV or manual entry — or send the PDF to your assistant to convert.',
-        })
+      for (const f of files) {
+        try {
+          const lines = await extractPdfLines(f)
+          const { date: d, values, lab, sample } = parseLabLines(lines)
+          if (Object.keys(values).length > 0) {
+            previews.push({ date: d || todayISO(), dateGuess: !d, values, fileName: f.name, lab, sample })
+          } else {
+            skipped.push(`${f.name} (${lines.length === 0 ? 'no selectable text — a scan or photo' : 'no marker values recognized'})`)
+          }
+        } catch (err) {
+          const name = err?.name || ''
+          const reason =
+            name === 'PasswordException'
+              ? 'password-protected'
+              : name === 'InvalidPDFException'
+                ? 'not a valid PDF'
+                : err?.message || 'failed to read'
+          skipped.push(`${f.name} (${reason})`)
+        }
       }
-    } catch (err) {
-      const name = err?.name || ''
-      let text
-      if (name === 'PasswordException') {
-        text = 'This PDF is password-protected. Save an unlocked copy (e.g. open it and print/share as PDF) and try again.'
-      } else if (name === 'InvalidPDFException') {
-        text = 'That file does not look like a valid PDF. Re-download it and try again.'
-      } else {
-        text = `Failed to read that PDF${err?.message ? ` (${err.message})` : ''}. Try CSV or manual entry instead.`
-      }
-      setFeedback({ tone: 'warn', text })
     } finally {
       setBusy(false)
+    }
+
+    if (previews.length === 0) {
+      setFeedback({
+        tone: 'warn',
+        text: `Couldn't read values from ${files.length === 1 ? 'that PDF' : 'any of those PDFs'}${skipped.length ? `: ${skipped.join('; ')}` : ''}. Try CSV or manual entry — or, for scans/photos, the photo scanner.`,
+      })
+      return
+    }
+    if (skipped.length) {
+      setFeedback({ tone: 'warn', text: `Skipped ${skipped.length} file(s): ${skipped.join('; ')}` })
+    }
+    // Review the first now; the rest queue up and appear one at a time.
+    setBatchTotal(previews.length)
+    setQueue(previews.slice(1))
+    setPreview(previews[0])
+  }
+
+  // Move to the next queued PDF preview, or finish the batch.
+  function advancePreview() {
+    if (queue.length > 0) {
+      setPreview(queue[0])
+      setQueue(queue.slice(1))
+    } else {
+      setPreview(null)
+      setBatchTotal(0)
+      setTimeout(done, 800)
+    }
+  }
+
+  function skipPreview() {
+    if (queue.length > 0) {
+      setPreview(queue[0])
+      setQueue(queue.slice(1))
+    } else {
+      setPreview(null)
+      setBatchTotal(0)
     }
   }
 
@@ -156,8 +191,7 @@ export default function AddData({ refresh, done }) {
       await saveReport({ date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values })
       await refresh()
       setFeedback({ tone: 'good', text: `Saved ${Object.keys(preview.values).length} values for ${preview.date}.` })
-      setPreview(null)
-      setTimeout(done, 800)
+      advancePreview()
     } catch (err) {
       setFeedback({ tone: 'warn', text: `Couldn't save: ${err?.message || 'please try again.'}` })
     } finally {
@@ -170,6 +204,12 @@ export default function AddData({ refresh, done }) {
     return (
       <div className="add-data pad">
         <h3>📄 Review before saving</h3>
+        {batchTotal > 1 && (
+          <p className="feedback good">
+            Report {batchTotal - queue.length} of {batchTotal}
+            {queue.length ? ` — ${queue.length} more to review after this` : ' — last one'}
+          </p>
+        )}
         <p className="muted">
           {preview.source === 'photo'
             ? 'Read from your photo with on-device text recognition — OCR can misread decimals, so check each value against the paper. ⚠️ marks values that look implausible.'
@@ -219,10 +259,11 @@ export default function AddData({ refresh, done }) {
         </table>
         <div className="report-actions">
           <button className="btn primary" onClick={confirmPreview} disabled={busy || entries.length === 0 || !preview.date}>
-            Save {entries.length} values
+            {busy ? 'Saving…' : `Save ${entries.length} values`}
+            {queue.length > 0 ? ' & next' : ''}
           </button>
-          <button className="btn ghost" onClick={() => setPreview(null)}>
-            Discard
+          <button className="btn ghost" onClick={skipPreview} disabled={busy}>
+            {queue.length > 0 ? 'Skip this one' : 'Discard'}
           </button>
         </div>
       </div>
@@ -281,9 +322,9 @@ export default function AddData({ refresh, done }) {
       ) : (
         <div className="form">
           <button className="btn primary" disabled={busy} onClick={() => pdfRef.current?.click()}>
-            {busy && ocrProgress == null ? 'Reading PDF…' : '📄 Upload lab PDF'}
+            {busy && ocrProgress == null ? 'Reading PDFs…' : '📄 Upload lab PDFs'}
           </button>
-          <input ref={pdfRef} type="file" accept=".pdf,application/pdf" hidden onChange={onPdfFile} />
+          <input ref={pdfRef} type="file" accept=".pdf,application/pdf" multiple hidden onChange={onPdfFiles} />
           <button className="btn primary" disabled={busy} onClick={() => photoRef.current?.click()}>
             {ocrProgress != null
               ? `Reading photo… ${Math.round(ocrProgress * 100)}%`
@@ -291,9 +332,10 @@ export default function AddData({ refresh, done }) {
           </button>
           <input ref={photoRef} type="file" accept="image/*" hidden onChange={onPhotoFile} />
           <p className="muted">
-            PDFs with selectable text (like MEDLAB reports) read instantly. For paper reports, take
-            a photo — sharp, straight-on, good light — and it's read on your device (needs internet
-            the first time to fetch the reader). You'll review every value before it's saved.
+            PDFs with selectable text (like MEDLAB reports) read instantly — pick several at once and
+            you'll review them one at a time. For paper reports, take a photo — sharp, straight-on,
+            good light — and it's read on your device (needs internet the first time to fetch the
+            reader). You'll review every value before it's saved.
           </p>
           <hr className="rule" />
           <p className="muted">
