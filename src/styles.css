@@ -1822,7 +1822,8 @@ code {
   border: 1px solid var(--line);
   border-radius: 14px;
   color: var(--text);
-  font-size: 15px;
+  /* 16px avoids iOS Safari's focus auto-zoom */
+  font-size: 16px;
   padding: 10px 13px;
   font-family: inherit;
 }
@@ -3066,7 +3067,8 @@ code {
   background: none;
   outline: none;
   font-family: inherit;
-  font-size: 15px;
+  /* 16px keeps iOS Safari from auto-zooming the page when the field is focused */
+  font-size: 16px;
   color: #1f2c45;
   padding: 12px 0;
 }
