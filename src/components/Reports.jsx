@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { sortByDate, toCSV } from '../store.js'
+import { deleteReport, clearAllReports } from '../dataStore.js'
 import { markerById, statusOf } from '../catalog.js'
 import { IconExport, IconTrash } from './Icons.jsx'
 
@@ -23,13 +24,25 @@ function sourceIcon(notes) {
   return '🧪'
 }
 
-export default function Reports({ reports, setReports, onAdd }) {
+export default function Reports({ reports, refresh, onAdd, onSignOut }) {
   const [open, setOpen] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
   const sorted = sortByDate(reports).reverse()
   const totalValues = reports.reduce((t, r) => t + Object.keys(r.values).length, 0)
 
-  function remove(id) {
-    if (confirm('Delete this report?')) setReports(reports.filter((r) => r.id !== id))
+  async function remove(id) {
+    if (!confirm('Delete this report?')) return
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteReport(id)
+      await refresh()
+    } catch (err) {
+      setError(err?.message || "Couldn't delete that report.")
+    } finally {
+      setBusy(false)
+    }
   }
 
   function exportCSV() {
@@ -41,9 +54,17 @@ export default function Reports({ reports, setReports, onAdd }) {
     URL.revokeObjectURL(a.href)
   }
 
-  function clearAll() {
-    if (confirm('Delete ALL data from this device? Export first if you want a backup.')) {
-      setReports([])
+  async function clearAll() {
+    if (!confirm('Delete ALL of your reports? Export first if you want a backup.')) return
+    setBusy(true)
+    setError(null)
+    try {
+      await clearAllReports()
+      await refresh()
+    } catch (err) {
+      setError(err?.message || "Couldn't clear your data.")
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -61,6 +82,8 @@ export default function Reports({ reports, setReports, onAdd }) {
       </div>
 
       <div className="pad">
+        {error && <p className="feedback warn">{error}</p>}
+
         <button className="upload-cta" onClick={onAdd}>
           <span className="upload-plus">+</span>
           <span>
@@ -127,7 +150,7 @@ export default function Reports({ reports, setReports, onAdd }) {
                     </tbody>
                   </table>
                   {r.notes && <p className="muted">{r.notes}</p>}
-                  <button className="btn danger small" onClick={() => remove(r.id)}>
+                  <button className="btn danger small" onClick={() => remove(r.id)} disabled={busy}>
                     <IconTrash size={15} /> Delete report
                   </button>
                 </div>
@@ -140,10 +163,18 @@ export default function Reports({ reports, setReports, onAdd }) {
           <button className="btn ghost small" onClick={exportCSV}>
             <IconExport size={15} /> Export CSV backup
           </button>
-          <button className="btn danger small" onClick={clearAll}>
+          <button className="btn danger small" onClick={clearAll} disabled={busy}>
             <IconTrash size={15} /> Clear all data
           </button>
         </div>
+
+        {onSignOut && (
+          <div className="account-bar">
+            <button className="btn ghost small" onClick={onSignOut}>
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
