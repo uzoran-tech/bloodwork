@@ -58,6 +58,12 @@ One-time setup:
    create policy "reports_insert_own" on public.reports for insert with check (user_id = auth.uid());
    create policy "reports_update_own" on public.reports for update using (user_id = auth.uid()) with check (user_id = auth.uid());
    create policy "reports_delete_own" on public.reports for delete using (user_id = auth.uid());
+
+   -- Table-level privileges for the API roles. RLS (above) still restricts every
+   -- row to its owner; without these grants Postgres rejects all access with
+   -- "permission denied for table reports" before RLS is even evaluated.
+   grant usage on schema public to anon, authenticated;
+   grant select, insert, update, delete on table public.reports to anon, authenticated;
    ```
 
 3. **Auth → URL Configuration**: set **Site URL** to your deployed URL
