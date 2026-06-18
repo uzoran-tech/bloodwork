@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { loadReports, saveReports } from './store.js'
-import { demoReports } from './demo.js'
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from './auth.jsx'
+import Auth from './Auth.jsx'
+import { listReports } from './dataStore.js'
 import Dashboard from './components/Dashboard.jsx'
 import Reports from './components/Reports.jsx'
 import AddData from './components/AddData.jsx'
@@ -13,29 +14,63 @@ const TABS = [
   { id: 'reports', label: 'Reports', Icon: IconReports },
 ]
 
-const THEME_KEY = 'bloodtrack.theme'
-
 export default function App() {
-  const [reports, setReports] = useState(loadReports)
+  const { user, loading, recovering, signOut } = useAuth()
+
+  const [reports, setReports] = useState([])
   const [tab, setTab] = useState('dashboard')
   const [detailId, setDetailId] = useState(null)
+  const [dataLoading, setDataLoading] = useState(false)
+  const [dataError, setDataError] = useState(null)
 
   useEffect(() => {
-    saveReports(reports)
-  }, [reports])
-
-  // Light theme only (no toggle); keep the attribute stable for CSS.
-  useEffect(() => {
-    document.documentElement.dataset.theme = localStorage.getItem(THEME_KEY) || 'light'
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#2f405e')
+    document.documentElement.dataset.theme = 'light'
   }, [])
+
+  const refresh = useCallback(async () => {
+    setDataError(null)
+    try {
+      setReports(await listReports())
+    } catch (err) {
+      setDataError(err?.message || 'Could not load your reports.')
+    }
+  }, [])
+
+  // Load this user's reports once authenticated; clear on sign-out.
+  useEffect(() => {
+    if (!user) {
+      setReports([])
+      return
+    }
+    setDataLoading(true)
+    refresh().finally(() => setDataLoading(false))
+  }, [user, refresh])
+
+  if (loading) {
+    return (
+      <div className="splash">
+        <span className="welcome-icon">
+          <IconDrop size={56} />
+        </span>
+      </div>
+    )
+  }
+
+  if (recovering) return <Auth mode="reset" />
+  if (!user) return <Auth />
 
   const empty = reports.length === 0
 
   return (
     <div className="app">
       <main className="main">
-        {empty && tab !== 'add' ? (
+        {dataLoading ? (
+          <div className="splash">
+            <span className="welcome-icon">
+              <IconDrop size={56} />
+            </span>
+          </div>
+        ) : empty && tab !== 'add' ? (
           <div className="view">
             <div className="welcome-hero">
               <span className="welcome-icon">
@@ -44,6 +79,7 @@ export default function App() {
               <h2>Track your bloodwork over time</h2>
             </div>
             <div className="welcome-body">
+              {dataError && <p className="feedback warn">{dataError}</p>}
               <p>
                 Add your lab reports and BloodTrack shows every marker against its reference range,
                 grouped by what needs attention.
@@ -51,12 +87,11 @@ export default function App() {
               <button className="btn primary" onClick={() => setTab('add')}>
                 Add your first report
               </button>
-              <button className="btn ghost" onClick={() => setReports(demoReports())}>
-                Explore with demo data
+              <button className="btn ghost" onClick={signOut}>
+                Sign out
               </button>
               <p className="disclaimer">
-                Data stays on this device. BloodTrack describes your numbers — it is not medical
-                advice.
+                Your data is stored privately in your account — discuss results with your doctor.
               </p>
             </div>
           </div>
@@ -64,10 +99,15 @@ export default function App() {
           <div className="view" key={tab}>
             {tab === 'dashboard' && <Dashboard reports={reports} onOpenMarker={setDetailId} />}
             {tab === 'reports' && (
-              <Reports reports={reports} setReports={setReports} onAdd={() => setTab('add')} />
+              <Reports
+                reports={reports}
+                refresh={refresh}
+                onAdd={() => setTab('add')}
+                onSignOut={signOut}
+              />
             )}
             {tab === 'add' && (
-              <AddData reports={reports} setReports={setReports} done={() => setTab('dashboard')} />
+              <AddData reports={reports} refresh={refresh} done={() => setTab('dashboard')} />
             )}
           </div>
         )}

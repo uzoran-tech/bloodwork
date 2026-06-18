@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import { MARKERS, markerById, statusOf } from '../catalog.js'
-import { mergeReport, parseCSV } from '../store.js'
+import { parseCSV } from '../store.js'
+import { saveReport } from '../dataStore.js'
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
-export default function AddData({ reports, setReports, done }) {
+export default function AddData({ refresh, done }) {
   const [mode, setMode] = useState('form')
   const [date, setDate] = useState('')
   const [lab, setLab] = useState('')
@@ -22,7 +23,7 @@ export default function AddData({ reports, setReports, done }) {
     setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)))
   }
 
-  function saveForm() {
+  async function saveForm() {
     if (!date) return setFeedback({ tone: 'warn', text: 'Pick the test date first.' })
     const values = {}
     for (const r of rows) {
@@ -31,26 +32,40 @@ export default function AddData({ reports, setReports, done }) {
     }
     if (Object.keys(values).length === 0)
       return setFeedback({ tone: 'warn', text: 'Add at least one marker value.' })
-    setReports(mergeReport(reports, { date, lab, notes: '', values }))
-    setFeedback({ tone: 'good', text: `Saved report for ${date}.` })
-    setRows([{ markerId: '', value: '' }])
-    setTimeout(done, 600)
+    setBusy(true)
+    try {
+      await saveReport({ date, lab, sample: '', notes: '', values })
+      await refresh()
+      setFeedback({ tone: 'good', text: `Saved report for ${date}.` })
+      setRows([{ markerId: '', value: '' }])
+      setTimeout(done, 600)
+    } catch (err) {
+      setFeedback({ tone: 'warn', text: `Couldn't save: ${err?.message || 'please try again.'}` })
+    } finally {
+      setBusy(false)
+    }
   }
 
-  function importText(text) {
+  async function importText(text) {
     const { reports: parsed, imported, errors } = parseCSV(text)
     if (imported === 0) {
       return setFeedback({ tone: 'warn', text: `Nothing imported. ${errors[0] || 'Expected rows like: 2024-06-10,tsh,1.71'}` })
     }
-    let next = reports
-    for (const r of parsed) next = mergeReport(next, r)
-    setReports(next)
-    setFeedback({
-      tone: 'good',
-      text: `Imported ${imported} values across ${parsed.length} dates.${errors.length ? ` Skipped ${errors.length} rows.` : ''}`,
-    })
-    setCsvText('')
-    setTimeout(done, 900)
+    setBusy(true)
+    try {
+      for (const r of parsed) await saveReport(r)
+      await refresh()
+      setFeedback({
+        tone: 'good',
+        text: `Imported ${imported} values across ${parsed.length} dates.${errors.length ? ` Skipped ${errors.length} rows.` : ''}`,
+      })
+      setCsvText('')
+      setTimeout(done, 900)
+    } catch (err) {
+      setFeedback({ tone: 'warn', text: `Couldn't save: ${err?.message || 'please try again.'}` })
+    } finally {
+      setBusy(false)
+    }
   }
 
   function onCsvFile(e) {
@@ -134,12 +149,20 @@ export default function AddData({ reports, setReports, done }) {
     }
   }
 
-  function confirmPreview() {
+  async function confirmPreview() {
     if (!preview.date) return setFeedback({ tone: 'warn', text: 'Pick the test date first.' })
-    setReports(mergeReport(reports, { date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values }))
-    setFeedback({ tone: 'good', text: `Saved ${Object.keys(preview.values).length} values for ${preview.date}.` })
-    setPreview(null)
-    setTimeout(done, 800)
+    setBusy(true)
+    try {
+      await saveReport({ date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values })
+      await refresh()
+      setFeedback({ tone: 'good', text: `Saved ${Object.keys(preview.values).length} values for ${preview.date}.` })
+      setPreview(null)
+      setTimeout(done, 800)
+    } catch (err) {
+      setFeedback({ tone: 'warn', text: `Couldn't save: ${err?.message || 'please try again.'}` })
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (preview) {
@@ -195,7 +218,7 @@ export default function AddData({ reports, setReports, done }) {
           </tbody>
         </table>
         <div className="report-actions">
-          <button className="btn primary" onClick={confirmPreview} disabled={entries.length === 0 || !preview.date}>
+          <button className="btn primary" onClick={confirmPreview} disabled={busy || entries.length === 0 || !preview.date}>
             Save {entries.length} values
           </button>
           <button className="btn ghost" onClick={() => setPreview(null)}>
@@ -251,8 +274,8 @@ export default function AddData({ reports, setReports, done }) {
           <button className="btn ghost small" onClick={() => setRows([...rows, { markerId: '', value: '' }])}>
             + Add another marker
           </button>
-          <button className="btn primary" onClick={saveForm}>
-            Save report
+          <button className="btn primary" onClick={saveForm} disabled={busy}>
+            {busy ? 'Saving…' : 'Save report'}
           </button>
         </div>
       ) : (
@@ -285,7 +308,7 @@ export default function AddData({ reports, setReports, done }) {
             onChange={(e) => setCsvText(e.target.value)}
           />
           <div className="report-actions">
-            <button className="btn ghost" onClick={() => importText(csvText)}>
+            <button className="btn ghost" onClick={() => importText(csvText)} disabled={busy}>
               Import pasted text
             </button>
             <button className="btn ghost" onClick={() => csvRef.current?.click()}>
