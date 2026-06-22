@@ -37,3 +37,17 @@ describe('connected insulin readings', () => {
     expect(values.insulin2h).toBeUndefined()
   })
 })
+
+describe('short marker codes', () => {
+  it('matches a 2-letter code (LH) printed as a standalone leading token', () => {
+    const { values } = parseLabLines(['V LH 4,48 CMIA * mIU/mL'])
+    expect(values.lh).toBe(4.48)
+  })
+
+  it('does not match a short code buried mid-word', () => {
+    // "Alkalna" must not be read as LH/ALP via a stray substring.
+    const { values } = parseLabLines(['Holesterol 5,2 mmol/L'])
+    expect(values.lh).toBeUndefined()
+    expect(values.chol).toBe(5.2)
+  })
+})
