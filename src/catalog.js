@@ -73,7 +73,8 @@ export const MARKERS = [
   { id: 'phosphorus', name: 'Phosphorus', unit: 'mmol/L', panel: 'Electrolytes', lo: 0.81, hi: 1.45, aliases: ['fosfor', 'fosfati', 'neorganski fosfor'] },
   { id: 'bicarbonate', name: 'Bicarbonate', unit: 'mmol/L', panel: 'Electrolytes', lo: 22, hi: 29, aliases: ['bikarbonati'] },
   // Metabolic
-  { id: 'glucose', name: 'Glucose (fasting)', unit: 'mmol/L', panel: 'Metabolic', lo: 3.9, hi: 6.1, aliases: ['glukoza', 'secer u krvi', 'glikemija'] },
+  { id: 'glucose', name: 'Glucose (fasting)', unit: 'mmol/L', panel: 'Metabolic', lo: 3.9, hi: 6.1, aliases: ['glukoza', 'glukoza nataste', 'secer u krvi', 'glikemija'] },
+  { id: 'glucose2h', name: 'Glucose (2h post-meal)', unit: 'mmol/L', panel: 'Metabolic', lo: null, hi: 7.8, aliases: ['glukoza 2 h posle jela', 'glukoza 2h posle jela', 'glukoza posle jela', 'glukoza 2h', 'postprandijalna glukoza', 'postprandial glucose', 'ogtt 120', 'ogtt 2h'] },
   { id: 'hba1c', name: 'HbA1c', unit: '%', panel: 'Metabolic', lo: 4.0, hi: 5.7, aliases: ['glikozilirani hemoglobin', 'glikirani hemoglobin'] },
   { id: 'insulin', name: 'Insulin (fasting)', unit: 'µIU/mL', panel: 'Metabolic', lo: 2.6, hi: 24.9, aliases: ['insulin'] },
   { id: 'cpeptide', name: 'C-peptide', unit: 'ng/mL', panel: 'Metabolic', lo: 1.1, hi: 4.4, aliases: ['c-peptid', 'c peptid'] },
