@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { trackedMarkers, seriesFor } from '../store.js'
-import { statusOf, refRange, PANELS, PANEL_ICONS } from '../catalog.js'
+import { statusOf, refRange, PANELS, PANEL_ICONS, GROUPS } from '../catalog.js'
 import {
   IconFlask,
   IconCheckCircle,
@@ -27,12 +27,14 @@ function refLine(m, range) {
   return 'No reference range'
 }
 
-function MarkerRow({ m, v, date, st, range, onOpen }) {
+// One marker row. `label` overrides the displayed name (used by group cards to
+// show the condition, e.g. "Fasting", instead of the full marker name).
+function MarkerRow({ m, v, date, st, range, onOpen, label: nameLabel, sub }) {
   const { label, Icon } = ST[st]
   return (
-    <button className="mk-row" onClick={() => onOpen(m.id)}>
+    <button className={`mk-row ${sub ? 'mk-subrow' : ''}`} onClick={() => onOpen(m.id)}>
       <span className="mk-left">
-        <span className="mk-name">{m.name}</span>
+        <span className="mk-name">{nameLabel || m.name}</span>
         <span className="mk-meta">
           <span className={`mk-pill ${st}`}>
             <Icon size={14} /> {label}
@@ -47,6 +49,18 @@ function MarkerRow({ m, v, date, st, range, onOpen }) {
         <span className="mk-ref">{refLine(m, range)}</span>
       </span>
     </button>
+  )
+}
+
+// A connected-marker card: one box, a labeled sub-row per member.
+function MarkerGroup({ name, members, onOpen }) {
+  return (
+    <div className="mk-group">
+      <div className="mk-group-title">{name}</div>
+      {members.map((r) => (
+        <MarkerRow key={r.m.id} {...r} label={r.m.groupSub} sub onOpen={onOpen} />
+      ))}
+    </div>
   )
 }
 
@@ -73,22 +87,53 @@ export default function Dashboard({ reports, onOpenMarker }) {
   const inN = rows.filter((r) => r.st === 'normal').length
   const outN = total - inN
 
+  // A marker group becomes one card only when 2+ of its members are tracked.
+  const groupCounts = {}
+  for (const r of rows) if (r.m.group) groupCounts[r.m.group] = (groupCounts[r.m.group] || 0) + 1
+  const isGrouped = (m) => m.group && groupCounts[m.group] >= 2
+
   const q = query.trim().toLowerCase()
   const filtered = rows.filter((r) => {
     if (status === 'in' && r.st !== 'normal') return false
     if (status === 'out' && r.st === 'normal') return false
-    if (q && !r.m.name.toLowerCase().includes(q)) return false
+    if (q) {
+      const groupName = isGrouped(r.m) ? GROUPS[r.m.group]?.name || '' : ''
+      if (!r.m.name.toLowerCase().includes(q) && !groupName.toLowerCase().includes(q)) return false
+    }
     return true
   })
+
+  // Assemble a panel's rows into render items, collapsing grouped markers into
+  // a single group card while keeping their order of first appearance.
+  function panelItems(panel) {
+    const items = []
+    const seen = new Map()
+    for (const r of filtered) {
+      if (r.m.panel !== panel) continue
+      if (isGrouped(r.m)) {
+        let item = seen.get(r.m.group)
+        if (!item) {
+          item = { type: 'group', key: r.m.group, name: GROUPS[r.m.group]?.name || r.m.name, members: [] }
+          seen.set(r.m.group, item)
+          items.push(item)
+        }
+        item.members.push(r)
+      } else {
+        items.push({ type: 'single', key: r.m.id, row: r })
+      }
+    }
+    return items
+  }
 
   // Built-in panel order first, then any custom panels (e.g. "Other") that
   // auto-installed markers belong to.
   const extraPanels = [...new Set(rows.map((r) => r.m.panel).filter((p) => !PANELS.includes(p)))]
   const groups = [...PANELS, ...extraPanels]
-    .map((panel) => ({
-      panel,
-      items: filtered.filter((r) => r.m.panel === panel),
-    }))
+    .map((panel) => {
+      const items = panelItems(panel)
+      const count = items.reduce((n, it) => n + (it.type === 'group' ? it.members.length : 1), 0)
+      return { panel, items, count }
+    })
     .filter((g) => g.items.length > 0)
 
   return (
@@ -164,11 +209,15 @@ export default function Dashboard({ reports, onOpenMarker }) {
                 <span className="group-title">
                   <span className="group-ico">{PANEL_ICONS[g.panel]}</span> {g.panel}
                 </span>
-                <span className="group-count">{g.items.length}</span>
+                <span className="group-count">{g.count}</span>
               </div>
-              {g.items.map((r) => (
-                <MarkerRow key={r.m.id} {...r} onOpen={onOpenMarker} />
-              ))}
+              {g.items.map((it) =>
+                it.type === 'group' ? (
+                  <MarkerGroup key={it.key} name={it.name} members={it.members} onOpen={onOpenMarker} />
+                ) : (
+                  <MarkerRow key={it.key} {...it.row} onOpen={onOpenMarker} />
+                )
+              )}
             </div>
           ))
         )}
