@@ -3339,3 +3339,264 @@ code {
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
+
+/* ============================================================
+   Home v2 — "make interfaces feel better" experiment.
+   Applies the skill: shadow-as-border depth, scale-on-press,
+   split + staggered enter, tabular numbers, a focal health
+   ring, concentric radii, font smoothing, reduced-motion.
+   ============================================================ */
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.home.v2 {
+  --shadow-border:
+    0 0 0 1px rgba(0, 0, 0, 0.05),
+    0 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0 3px 8px -2px rgba(0, 0, 0, 0.05);
+  --shadow-border-hover:
+    0 0 0 1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -1px rgba(0, 0, 0, 0.08),
+    0 8px 18px -4px rgba(0, 0, 0, 0.09);
+  --ok: #1f9e63;
+  --ok-ring: #2bbe7a;
+  --bad: #d2453c;
+  background: #eef1f5;
+  min-height: 100%;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+/* Scale-on-press: always 0.96, interruptible transition (never `all`). */
+.home.v2 .press {
+  transition-property: scale, background-color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+.home.v2 .press:active {
+  scale: 0.96;
+}
+
+/* Split + stagger: each semantic chunk fades/translates/deblurs once. */
+@keyframes home-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.home.v2 .enter {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(4px);
+  animation: home-enter 460ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 80ms);
+  will-change: transform, opacity;
+}
+
+.home.v2 .home-title {
+  text-wrap: balance;
+}
+
+/* Hero card: depth from layered shadow, not a hard border. */
+.home.v2 .health-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 4px 16px 14px;
+  padding: 18px;
+  background: #fff;
+  border-radius: 24px; /* concentric: inner legend radius 12 + ~12 inset */
+  box-shadow: var(--shadow-border);
+}
+
+/* The focal ring. Arc + centre number animate in once on load. */
+.home.v2 .hring {
+  position: relative;
+  width: 116px;
+  height: 116px;
+  flex: none;
+}
+.home.v2 .hring svg {
+  width: 116px;
+  height: 116px;
+  transform: rotate(-90deg); /* start the arc at 12 o'clock */
+}
+.home.v2 .hring-track {
+  fill: none;
+  stroke: #edf0f4;
+  stroke-width: 11;
+}
+.home.v2 .hring-fill {
+  fill: none;
+  stroke-width: 11;
+  stroke-linecap: round;
+  stroke: var(--ok-ring);
+  animation: hring-grow 900ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  will-change: stroke-dashoffset;
+}
+.home.v2 .hring.warn .hring-fill {
+  stroke: #e0a13a;
+}
+.home.v2 .hring.bad .hring-fill {
+  stroke: var(--bad);
+}
+@keyframes hring-grow {
+  from {
+    stroke-dashoffset: var(--dash);
+  }
+  to {
+    stroke-dashoffset: var(--off);
+  }
+}
+.home.v2 .hring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.home.v2 .hring-center strong {
+  display: flex;
+  align-items: baseline;
+  font-size: 31px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: #1f2c45;
+  line-height: 1;
+}
+.home.v2 .hring-center strong small {
+  font-size: 15px;
+  font-weight: 700;
+  margin-left: 1px;
+  color: #7b8495;
+}
+.home.v2 .hring-center span {
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7b8495;
+}
+
+/* Legend rows double as status filters. */
+.home.v2 .hero-legend {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.home.v2 .legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 12px;
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.home.v2 .legend-row.active {
+  background: #f1f4f8;
+}
+.home.v2 .legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c3cad6;
+  flex: none;
+}
+.home.v2 .legend-dot.green {
+  background: var(--ok-ring);
+}
+.home.v2 .legend-dot.red {
+  background: var(--bad);
+}
+.home.v2 .legend-label {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+  color: #455065;
+}
+.home.v2 .legend-n {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1f2c45;
+}
+.home.v2 .legend-n.green {
+  color: var(--ok);
+}
+.home.v2 .legend-n.red {
+  color: var(--bad);
+}
+
+.home.v2 .search-bar {
+  margin: 2px 16px 8px;
+}
+
+/* Marker groups: floating cards; dividers stay hairline borders. */
+.home.v2 .result-group {
+  margin: 12px 16px 0;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: var(--shadow-border);
+  overflow: hidden;
+}
+.home.v2 .group-head {
+  position: static;
+  padding: 15px 18px 9px;
+  background: none;
+}
+.home.v2 .group-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #8a93a3;
+}
+.home.v2 .group-count {
+  font-size: 12px;
+  font-weight: 800;
+  color: #aab2bf;
+}
+.home.v2 .mk-row {
+  padding: 13px 18px;
+  border-top: 1px solid #eef1f5;
+}
+.home.v2 .group-head + .mk-row {
+  border-top: 0;
+}
+.home.v2 .mk-row:hover {
+  background: #fafbfc;
+}
+
+.home.v2 .sheet-note {
+  padding: 18px 20px 4px;
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home.v2 .enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .home.v2 .hring-fill {
+    animation: none;
+  }
+  .home.v2 .press:active {
+    scale: 1;
+  }
+}
