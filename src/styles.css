@@ -3353,3 +3353,25 @@ code {
   letter-spacing: 0.4px;
   vertical-align: middle;
 }
+
+/* Delete a single reading from a marker's history table */
+.row-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #c0c7d2;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.row-del:hover {
+  background: #fcecea;
+  color: var(--red, #d2453c);
+}
+.row-del:disabled {
+  opacity: 0.5;
+}
