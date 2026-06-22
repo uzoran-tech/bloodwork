@@ -20,3 +20,20 @@ describe('connected glucose readings', () => {
     expect(values.glucose2h).toBeUndefined()
   })
 })
+
+describe('connected insulin readings', () => {
+  it('keeps fasting and "Insulin - posle" (after) as separate markers', () => {
+    const { values } = parseLabLines([
+      'V Insulin 5,0 CMIA 2,6 - 24,9 µIU/mL',
+      'V Insulin - posle 15,7 CMIA µIU/mL',
+    ])
+    expect(values.insulin).toBe(5.0)
+    expect(values.insulin2h).toBe(15.7)
+  })
+
+  it('plain "Insulin" is still fasting insulin', () => {
+    const { values } = parseLabLines(['Insulin 7,2 2,6 - 24,9 µIU/mL'])
+    expect(values.insulin).toBe(7.2)
+    expect(values.insulin2h).toBeUndefined()
+  })
+})

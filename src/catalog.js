@@ -74,10 +74,10 @@ export const MARKERS = [
   { id: 'bicarbonate', name: 'Bicarbonate', unit: 'mmol/L', panel: 'Electrolytes', lo: 22, hi: 29, aliases: ['bikarbonati'] },
   // Metabolic
   { id: 'glucose', name: 'Glucose (fasting)', unit: 'mmol/L', panel: 'Metabolic', lo: 3.9, hi: 6.1, group: 'glucose', groupSub: 'Fasting', aliases: ['glukoza', 'glukoza nataste', 'secer u krvi', 'glikemija'] },
-  { id: 'glucose2h', name: 'Glucose (2h post-meal)', unit: 'mmol/L', panel: 'Metabolic', lo: null, hi: 7.8, group: 'glucose', groupSub: '2h post-meal', aliases: ['glukoza 2 h posle jela', 'glukoza 2h posle jela', 'glukoza posle jela', 'glukoza 2h', 'postprandijalna glukoza', 'postprandial glucose', 'ogtt 120', 'ogtt 2h'] },
+  { id: 'glucose2h', name: 'Glucose (2h post-meal)', unit: 'mmol/L', panel: 'Metabolic', lo: null, hi: 7.8, group: 'glucose', groupSub: '2h post-meal', aliases: ['glukoza 2 h posle jela', 'glukoza 2h posle jela', 'glukoza posle jela', 'glukoza posle obroka', 'glukoza posle', 'glukoza 2h', 'postprandijalna glukoza', 'postprandial glucose', 'ogtt 120', 'ogtt 2h'] },
   { id: 'hba1c', name: 'HbA1c', unit: '%', panel: 'Metabolic', lo: 4.0, hi: 5.7, aliases: ['glikozilirani hemoglobin', 'glikirani hemoglobin'] },
   { id: 'insulin', name: 'Insulin (fasting)', unit: 'µIU/mL', panel: 'Metabolic', lo: 2.6, hi: 24.9, group: 'insulin', groupSub: 'Fasting', aliases: ['insulin', 'insulin nataste'] },
-  { id: 'insulin2h', name: 'Insulin (2h post-meal)', unit: 'µIU/mL', panel: 'Metabolic', lo: null, hi: null, group: 'insulin', groupSub: '2h post-meal', aliases: ['insulin 2 h posle jela', 'insulin 2h posle jela', 'insulin posle jela', 'insulin 2h', 'postprandijalni insulin', 'ogtt insulin'] },
+  { id: 'insulin2h', name: 'Insulin (2h post-meal)', unit: 'µIU/mL', panel: 'Metabolic', lo: null, hi: null, group: 'insulin', groupSub: '2h post-meal', aliases: ['insulin 2 h posle jela', 'insulin 2h posle jela', 'insulin posle jela', 'insulin posle obroka', 'insulin posle', 'insulin 2h', 'postprandijalni insulin', 'ogtt insulin'] },
   { id: 'cpeptide', name: 'C-peptide', unit: 'ng/mL', panel: 'Metabolic', lo: 1.1, hi: 4.4, aliases: ['c-peptid', 'c peptid'] },
   { id: 'fructosamine', name: 'Fructosamine', unit: 'µmol/L', panel: 'Metabolic', lo: 205, hi: 285, aliases: ['fruktozamin'] },
   { id: 'homocysteine', name: 'Homocysteine', unit: 'µmol/L', panel: 'Metabolic', lo: 5.5, hi: 16.2, aliases: ['homocystein', 'homocistein'] },
