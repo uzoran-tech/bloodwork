@@ -238,7 +238,14 @@ function extractAnalyteName(line) {
     out.push(t)
   }
   while (out.length && FLAG_RE.test(out[0])) out.shift()
-  return out.join(' ').replace(METHOD_RE, ' ').replace(/[\s\-–:]+$/, '').replace(/\s+/g, ' ').trim()
+  return out
+    .join(' ')
+    .replace(METHOD_RE, ' ')
+    .replace(/[™®©*]/g, ' ') // quality-mark / footnote symbols, not part of the name
+    .replace(/^[\s\-–:]+/, '')
+    .replace(/[\s\-–:]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export function parseLabLines(lines) {

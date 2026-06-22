@@ -23,8 +23,8 @@ export const MARKERS = [
   { id: 'shbg', name: 'SHBG', unit: 'nmol/L', panel: 'Hormones', lo: 18.3, hi: 54.1, aliases: ['sex hormone binding globulin', 'globulin koji vezuje polne hormone'] },
   { id: 'dheas', name: 'DHEA-S', unit: 'µmol/L', panel: 'Hormones', lo: 2.2, hi: 15.2, aliases: ['dhea sulfat', 'dehidroepiandrosteron sulfat', 'dhea-so4'] },
   { id: 'androstenedione', name: 'Androstenedione', unit: 'ng/mL', panel: 'Hormones', lo: 0.3, hi: 3.3, aliases: ['androstendion', 'androstenedion', '4-androstenedione'] },
-  { id: 'ohp17', name: '17-OH Progesterone', unit: 'nmol/L', panel: 'Hormones', lo: null, hi: 6.0, aliases: ['17-oh progesteron', '17 oh progesteron', '17-hidroksiprogesteron'] },
-  { id: 'amh', name: 'Anti-Müllerian hormone', unit: 'ng/mL', panel: 'Hormones', lo: 1.0, hi: 9.0, aliases: ['amh', 'anti-milerov hormon'] },
+  { id: 'ohp17', name: '17-OH Progesterone', unit: 'nmol/L', panel: 'Hormones', lo: null, hi: 6.0, aliases: ['17-oh progesteron', '17 oh progesteron', '17-hidroksiprogesteron', '17-oh', '17 oh'] },
+  { id: 'amh', name: 'Anti-Müllerian hormone', unit: 'ng/mL', panel: 'Hormones', lo: 1.0, hi: 9.0, aliases: ['amh', 'anti-milerov hormon', 'anti mullerian', 'anti-mullerian', 'anti milerov'] },
   { id: 'betahcg', name: 'Beta-hCG', unit: 'mIU/mL', panel: 'Hormones', lo: null, hi: 5, aliases: ['beta hcg', 'b-hcg', 'beta-hcg', 'humani horionski gonadotropin'] },
   { id: 'cortisol', name: 'Cortisol (morning)', unit: 'nmol/L', panel: 'Hormones', lo: 101.2, hi: 536.7, aliases: ['kortizol', 'kortizol jutarnji'] },
   { id: 'acth', name: 'ACTH', unit: 'pg/mL', panel: 'Hormones', lo: 7.2, hi: 63.3, aliases: ['adrenokortikotropni hormon'] },
@@ -62,6 +62,7 @@ export const MARKERS = [
   { id: 'tsat', name: 'Transferrin saturation', unit: '%', panel: 'Vitamins & Minerals', lo: 20, hi: 50, aliases: ['saturacija transferina', 'zasicenje transferina'] },
   { id: 'zinc', name: 'Zinc', unit: 'µmol/L', panel: 'Vitamins & Minerals', lo: 7.0, hi: 23.0, aliases: ['cink'] },
   { id: 'copper', name: 'Copper', unit: 'µmol/L', panel: 'Vitamins & Minerals', lo: 11, hi: 22, aliases: ['bakar'] },
+  { id: 'ceruloplasmin', name: 'Ceruloplasmin', unit: 'g/L', panel: 'Vitamins & Minerals', lo: 0.2, hi: 0.6, aliases: ['ceruloplazmin'] },
   { id: 'selenium', name: 'Selenium', unit: 'µmol/L', panel: 'Vitamins & Minerals', lo: 0.89, hi: 1.65, aliases: ['selen'] },
   { id: 'magnesium', name: 'Magnesium', unit: 'mmol/L', panel: 'Vitamins & Minerals', lo: 0.66, hi: 1.07, aliases: ['magnezijum'] },
   // Electrolytes
@@ -70,7 +71,7 @@ export const MARKERS = [
   { id: 'chloride', name: 'Chloride', unit: 'mmol/L', panel: 'Electrolytes', lo: 98, hi: 107, aliases: ['hloridi', 'hlor'] },
   { id: 'calcium', name: 'Calcium (total)', unit: 'mmol/L', panel: 'Electrolytes', lo: 2.15, hi: 2.55, aliases: ['kalcijum', 'ukupni kalcijum'] },
   { id: 'ical', name: 'Calcium (ionized)', unit: 'mmol/L', panel: 'Electrolytes', lo: 1.12, hi: 1.32, aliases: ['jonizovani kalcijum', 'ionized calcium'] },
-  { id: 'phosphorus', name: 'Phosphorus', unit: 'mmol/L', panel: 'Electrolytes', lo: 0.81, hi: 1.45, aliases: ['fosfor', 'fosfati', 'neorganski fosfor'] },
+  { id: 'phosphorus', name: 'Phosphorus', unit: 'mmol/L', panel: 'Electrolytes', lo: 0.81, hi: 1.45, aliases: ['fosfor', 'fosfati', 'fosfat', 'neorganski fosfor', 'neorganski fosfat'] },
   { id: 'bicarbonate', name: 'Bicarbonate', unit: 'mmol/L', panel: 'Electrolytes', lo: 22, hi: 29, aliases: ['bikarbonati'] },
   // Metabolic
   { id: 'glucose', name: 'Glucose (fasting)', unit: 'mmol/L', panel: 'Metabolic', lo: 3.9, hi: 6.1, group: 'glucose', groupSub: 'Fasting', aliases: ['glukoza', 'glukoza nataste', 'secer u krvi', 'glikemija'] },
@@ -116,6 +117,7 @@ export const MARKERS = [
   { id: 'monocytes', name: 'Monocytes (abs)', unit: '×10⁹/L', panel: 'Blood Count', lo: 0.08, hi: 1.0, aliases: ['monociti'] },
   { id: 'eosinophils', name: 'Eosinophils (abs)', unit: '×10⁹/L', panel: 'Blood Count', lo: 0, hi: 0.4, aliases: ['eozinofili'] },
   { id: 'basophils', name: 'Basophils (abs)', unit: '×10⁹/L', panel: 'Blood Count', lo: 0, hi: 0.1, aliases: ['bazofili'] },
+  { id: 'immgran', name: 'Immature granulocytes', unit: '×10⁹/L', panel: 'Blood Count', lo: null, hi: 0.03, aliases: ['nezrele celije', 'nezrele granulocite', 'immature granulocytes'] },
   // Coagulation
   { id: 'inr', name: 'INR', unit: 'ratio', panel: 'Coagulation', lo: 0.8, hi: 1.2, aliases: ['pt inr'] },
   { id: 'pt', name: 'Prothrombin time', unit: '%', panel: 'Coagulation', lo: 70, hi: 130, aliases: ['protrombinsko vreme', 'protrombin'] },
