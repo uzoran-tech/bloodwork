@@ -51,3 +51,11 @@ describe('short marker codes', () => {
     expect(values.chol).toBe(5.2)
   })
 })
+
+describe('differential blood count (two ranges per row)', () => {
+  it('pairs the absolute range with the absolute value, not the % range', () => {
+    const { values, ranges } = parseLabLines(['Monociti 8,8 2,0-10,0 0,35 0,08-1,00 x 10⁹/L'])
+    expect(values.monocytes).toBe(0.35)
+    expect(ranges.monocytes).toEqual({ lo: 0.08, hi: 1 })
+  })
+})

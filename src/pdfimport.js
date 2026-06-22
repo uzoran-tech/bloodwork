@@ -104,27 +104,42 @@ function matchMarkerInLine(line) {
 // "< b" / "> a". Tiered lipids (LDL) print an "opt: < x" optimal threshold
 // next to a borderline band — prefer the optimal one. Returns { lo, hi } with a
 // null side for one-sided ranges, or null when nothing parseable is found.
-export function extractRange(line) {
+export function extractRange(line, value) {
   const s = line.replace(/(\d),(\d)/g, '$1.$2')
   const num = '(\\d+(?:\\.\\d+)?)'
-  let m = s.match(new RegExp(`opt\\S*\\s*:?\\s*([<>])\\s*${num}`, 'i'))
-  if (m) return m[1] === '<' ? { lo: null, hi: +m[2] } : { lo: +m[2], hi: null }
-  m = s.match(new RegExp(`${num}\\s*[-–]\\s*${num}`))
-  if (m) {
+  // Tiered lipids ("opt: < x") always win over a borderline band.
+  const opt = s.match(new RegExp(`opt\\S*\\s*:?\\s*([<>])\\s*${num}`, 'i'))
+  if (opt) return opt[1] === '<' ? { lo: null, hi: +opt[2] } : { lo: +opt[2], hi: null }
+
+  // Collect every range on the line with its position. Lines can carry more
+  // than one (e.g. a differential row: a %-range and an absolute-count range),
+  // so we pair the range with the value rather than blindly taking the first.
+  const found = []
+  for (const m of s.matchAll(new RegExp(`${num}\\s*[-–]\\s*${num}`, 'g'))) {
     let lo = +m[1]
     let hi = +m[2]
     if (lo > hi) [lo, hi] = [hi, lo]
-    return { lo, hi }
+    found.push({ idx: m.index, r: { lo, hi } })
   }
-  m = s.match(new RegExp(`\\bdo\\s*${num}`, 'i'))
-  if (m) return { lo: null, hi: +m[1] }
-  m = s.match(new RegExp(`\\bod\\s*${num}`, 'i'))
-  if (m) return { lo: +m[1], hi: null }
-  m = s.match(new RegExp(`<\\s*${num}`))
-  if (m) return { lo: null, hi: +m[1] }
-  m = s.match(new RegExp(`>\\s*${num}`))
-  if (m) return { lo: +m[1], hi: null }
-  return null
+  for (const m of s.matchAll(new RegExp(`\\bdo\\s*${num}`, 'gi'))) found.push({ idx: m.index, r: { lo: null, hi: +m[1] } })
+  for (const m of s.matchAll(new RegExp(`\\bod\\s*${num}`, 'gi'))) found.push({ idx: m.index, r: { lo: +m[1], hi: null } })
+  for (const m of s.matchAll(new RegExp(`<\\s*${num}`, 'g'))) found.push({ idx: m.index, r: { lo: null, hi: +m[1] } })
+  for (const m of s.matchAll(new RegExp(`>\\s*${num}`, 'g'))) found.push({ idx: m.index, r: { lo: +m[1], hi: null } })
+  if (found.length === 0) return null
+  found.sort((a, b) => a.idx - b.idx)
+  if (found.length === 1 || value == null) return found[0].r
+
+  // Pair with the value: take the range that comes right after the value's
+  // position (the value sits between its label and its own range). Fall back to
+  // the closest range before it, else the first.
+  const vstr = String(value).replace('.', '\\.')
+  const vre = new RegExp(`(?<![\\d.])${vstr}(?![\\d.])`, 'g')
+  let vpos = -1
+  for (const m of s.matchAll(vre)) vpos = m.index
+  if (vpos < 0) return found[0].r
+  const after = found.find((f) => f.idx > vpos)
+  if (after) return after.r
+  return found[found.length - 1].r
 }
 
 // Lines that carry numbers but are never analyte results: patient/header
@@ -262,7 +277,7 @@ export function parseLabLines(lines) {
       continue
     const v = extractValue(line)
     if (v == null) continue
-    const r = extractRange(line)
+    const r = extractRange(line, v)
     const id = matchMarkerInLine(line)
     if (id) {
       if (values[id] != null) continue
