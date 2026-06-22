@@ -83,7 +83,20 @@ function matchMarkerInLine(line) {
       }
     }
   }
-  return best
+  if (best) return best
+  // Fallback for short marker codes printed as a standalone leading token
+  // (LH, CK, C3, RF, PT…) that the substring pass skips because they're < 3
+  // chars. Exact whole-token match on the first few tokens only, so it can't
+  // pick up a 2-letter code buried inside another word.
+  const tokens = line.split(/[^A-Za-zÀ-ž0-9]+/).filter(Boolean).slice(0, 3)
+  for (const t of tokens) {
+    const tn = norm(t)
+    if (tn.length < 2 || tn.length > 4) continue
+    for (const m of MARKERS) {
+      if (norm(m.id) === tn || norm(m.name) === tn || m.aliases.some((a) => norm(a) === tn)) return m.id
+    }
+  }
+  return null
 }
 
 // The reference range printed alongside the value. European lab sheets write
