@@ -13,8 +13,8 @@ export const MARKERS = [
   { id: 'tgab', name: 'Anti-Tg antibodies', unit: 'IU/mL', panel: 'Hormones', lo: null, hi: 115, aliases: ['anti tg', 'anti-tg', 'tireoglobulin antitela'] },
   { id: 'thyroglobulin', name: 'Thyroglobulin', unit: 'ng/mL', panel: 'Hormones', lo: null, hi: 55, aliases: ['tireoglobulin'] },
   // Hormones — reproductive & adrenal
-  { id: 'testosterone', name: 'Testosterone (total)', unit: 'nmol/L', panel: 'Hormones', lo: 7.66, hi: 24.82, aliases: ['testosteron', 'testosteron uk', 'total testosterone'] },
-  { id: 'freetesto', name: 'Testosterone (free)', unit: 'pg/mL', panel: 'Hormones', lo: 2.15, hi: 16.5, aliases: ['free testosteron', 'slobodni testosteron'] },
+  { id: 'testosterone', name: 'Testosterone (total)', unit: 'nmol/L', panel: 'Hormones', lo: 7.66, hi: 24.82, group: 'testosterone', groupSub: 'Total', aliases: ['testosteron', 'testosteron uk', 'total testosterone'] },
+  { id: 'freetesto', name: 'Testosterone (free)', unit: 'pg/mL', panel: 'Hormones', lo: 2.15, hi: 16.5, group: 'testosterone', groupSub: 'Free', aliases: ['free testosteron', 'slobodni testosteron'] },
   { id: 'estradiol', name: 'Estradiol', unit: 'pg/mL', panel: 'Hormones', lo: null, hi: 56, aliases: ['estradiol', 'e2'] },
   { id: 'progesterone', name: 'Progesterone', unit: 'nmol/L', panel: 'Hormones', lo: null, hi: 3.18, aliases: ['progesteron'] },
   { id: 'lh', name: 'LH', unit: 'IU/L', panel: 'Hormones', lo: 1.7, hi: 8.6, aliases: ['luteinizing hormone', 'lutropin', 'luteinizirajuci hormon'] },
@@ -33,8 +33,8 @@ export const MARKERS = [
   { id: 'gh', name: 'Growth hormone', unit: 'ng/mL', panel: 'Hormones', lo: null, hi: 3.0, aliases: ['hormon rasta', 'somatotropin'] },
   { id: 'pth', name: 'Parathyroid hormone (PTH)', unit: 'pg/mL', panel: 'Hormones', lo: 15, hi: 65, aliases: ['parathormon', 'paratiroidni hormon', 'pth'] },
   // Tumor markers
-  { id: 'psa', name: 'PSA (total)', unit: 'ng/mL', panel: 'Tumor Markers', lo: null, hi: 3.5, aliases: ['ukupni psa', 'prostate specific antigen', 'psa ukupni'] },
-  { id: 'freepsa', name: 'PSA (free)', unit: 'ng/mL', panel: 'Tumor Markers', lo: null, hi: null, aliases: ['slobodni psa', 'free psa'] },
+  { id: 'psa', name: 'PSA (total)', unit: 'ng/mL', panel: 'Tumor Markers', lo: null, hi: 3.5, group: 'psa', groupSub: 'Total', aliases: ['ukupni psa', 'prostate specific antigen', 'psa ukupni'] },
+  { id: 'freepsa', name: 'PSA (free)', unit: 'ng/mL', panel: 'Tumor Markers', lo: null, hi: null, group: 'psa', groupSub: 'Free', aliases: ['slobodni psa', 'free psa'] },
   { id: 'cea', name: 'CEA', unit: 'ng/mL', panel: 'Tumor Markers', lo: null, hi: 5, aliases: ['carcinoembryonic antigen', 'karcinoembrionalni antigen'] },
   { id: 'afp', name: 'AFP (alpha-fetoprotein)', unit: 'ng/mL', panel: 'Tumor Markers', lo: null, hi: 7, aliases: ['alfa fetoprotein', 'alfa-fetoprotein', 'alpha-fetoprotein'] },
   { id: 'ca125', name: 'CA 125', unit: 'U/mL', panel: 'Tumor Markers', lo: null, hi: 35, aliases: ['ca 125', 'ca-125'] },
@@ -73,10 +73,11 @@ export const MARKERS = [
   { id: 'phosphorus', name: 'Phosphorus', unit: 'mmol/L', panel: 'Electrolytes', lo: 0.81, hi: 1.45, aliases: ['fosfor', 'fosfati', 'neorganski fosfor'] },
   { id: 'bicarbonate', name: 'Bicarbonate', unit: 'mmol/L', panel: 'Electrolytes', lo: 22, hi: 29, aliases: ['bikarbonati'] },
   // Metabolic
-  { id: 'glucose', name: 'Glucose (fasting)', unit: 'mmol/L', panel: 'Metabolic', lo: 3.9, hi: 6.1, aliases: ['glukoza', 'glukoza nataste', 'secer u krvi', 'glikemija'] },
-  { id: 'glucose2h', name: 'Glucose (2h post-meal)', unit: 'mmol/L', panel: 'Metabolic', lo: null, hi: 7.8, aliases: ['glukoza 2 h posle jela', 'glukoza 2h posle jela', 'glukoza posle jela', 'glukoza 2h', 'postprandijalna glukoza', 'postprandial glucose', 'ogtt 120', 'ogtt 2h'] },
+  { id: 'glucose', name: 'Glucose (fasting)', unit: 'mmol/L', panel: 'Metabolic', lo: 3.9, hi: 6.1, group: 'glucose', groupSub: 'Fasting', aliases: ['glukoza', 'glukoza nataste', 'secer u krvi', 'glikemija'] },
+  { id: 'glucose2h', name: 'Glucose (2h post-meal)', unit: 'mmol/L', panel: 'Metabolic', lo: null, hi: 7.8, group: 'glucose', groupSub: '2h post-meal', aliases: ['glukoza 2 h posle jela', 'glukoza 2h posle jela', 'glukoza posle jela', 'glukoza 2h', 'postprandijalna glukoza', 'postprandial glucose', 'ogtt 120', 'ogtt 2h'] },
   { id: 'hba1c', name: 'HbA1c', unit: '%', panel: 'Metabolic', lo: 4.0, hi: 5.7, aliases: ['glikozilirani hemoglobin', 'glikirani hemoglobin'] },
-  { id: 'insulin', name: 'Insulin (fasting)', unit: 'µIU/mL', panel: 'Metabolic', lo: 2.6, hi: 24.9, aliases: ['insulin'] },
+  { id: 'insulin', name: 'Insulin (fasting)', unit: 'µIU/mL', panel: 'Metabolic', lo: 2.6, hi: 24.9, group: 'insulin', groupSub: 'Fasting', aliases: ['insulin', 'insulin nataste'] },
+  { id: 'insulin2h', name: 'Insulin (2h post-meal)', unit: 'µIU/mL', panel: 'Metabolic', lo: null, hi: null, group: 'insulin', groupSub: '2h post-meal', aliases: ['insulin 2 h posle jela', 'insulin 2h posle jela', 'insulin posle jela', 'insulin 2h', 'postprandijalni insulin', 'ogtt insulin'] },
   { id: 'cpeptide', name: 'C-peptide', unit: 'ng/mL', panel: 'Metabolic', lo: 1.1, hi: 4.4, aliases: ['c-peptid', 'c peptid'] },
   { id: 'fructosamine', name: 'Fructosamine', unit: 'µmol/L', panel: 'Metabolic', lo: 205, hi: 285, aliases: ['fruktozamin'] },
   { id: 'homocysteine', name: 'Homocysteine', unit: 'µmol/L', panel: 'Metabolic', lo: 5.5, hi: 16.2, aliases: ['homocystein', 'homocistein'] },
@@ -126,8 +127,8 @@ export const MARKERS = [
   { id: 'ast', name: 'AST', unit: 'U/L', panel: 'Liver & Kidney', lo: null, hi: 40, aliases: ['got', 'aspartat aminotransferaza'] },
   { id: 'ggt', name: 'GGT', unit: 'U/L', panel: 'Liver & Kidney', lo: null, hi: 60, aliases: ['gama gt', 'gama glutamil transferaza'] },
   { id: 'alp', name: 'Alkaline phosphatase (ALP)', unit: 'U/L', panel: 'Liver & Kidney', lo: 35, hi: 105, aliases: ['alkalna fosfataza', 'alkaline phosphatase'] },
-  { id: 'bilirubin', name: 'Bilirubin (total)', unit: 'µmol/L', panel: 'Liver & Kidney', lo: null, hi: 21, aliases: ['ukupni bilirubin', 'bilirubin ukupni', 'total bilirubin', 'bilirubin'] },
-  { id: 'dbilirubin', name: 'Bilirubin (direct)', unit: 'µmol/L', panel: 'Liver & Kidney', lo: null, hi: 5, aliases: ['direktni bilirubin', 'direct bilirubin', 'konjugovani bilirubin'] },
+  { id: 'bilirubin', name: 'Bilirubin (total)', unit: 'µmol/L', panel: 'Liver & Kidney', lo: null, hi: 21, group: 'bilirubin', groupSub: 'Total', aliases: ['ukupni bilirubin', 'bilirubin ukupni', 'total bilirubin', 'bilirubin'] },
+  { id: 'dbilirubin', name: 'Bilirubin (direct)', unit: 'µmol/L', panel: 'Liver & Kidney', lo: null, hi: 5, group: 'bilirubin', groupSub: 'Direct', aliases: ['direktni bilirubin', 'direct bilirubin', 'konjugovani bilirubin'] },
   { id: 'protein', name: 'Total protein', unit: 'g/L', panel: 'Liver & Kidney', lo: 66, hi: 83, aliases: ['ukupni proteini', 'total protein', 'proteini'] },
   { id: 'albumin', name: 'Albumin', unit: 'g/L', panel: 'Liver & Kidney', lo: 35, hi: 52, aliases: ['albumini'] },
   { id: 'ldh', name: 'LDH', unit: 'U/L', panel: 'Liver & Kidney', lo: 135, hi: 225, aliases: ['laktat dehidrogenaza', 'lactate dehydrogenase'] },
@@ -167,6 +168,19 @@ export const PANEL_ICONS = {
   'Liver & Kidney': '🫘',
   Inflammation: '🔥',
   Other: '🧫',
+}
+
+// Connected markers — variants/conditions of one analyte that read best shown
+// together in a single card (e.g. fasting vs post-meal glucose, free vs total
+// testosterone). Each member marker carries `group` (a key here) and `groupSub`
+// (the label for its row inside the card). A group renders as one card only
+// when 2+ of its members are actually tracked.
+export const GROUPS = {
+  glucose: { name: 'Glucose' },
+  insulin: { name: 'Insulin' },
+  testosterone: { name: 'Testosterone' },
+  psa: { name: 'PSA' },
+  bilirubin: { name: 'Bilirubin' },
 }
 
 // Custom markers learned from imported reports — analytes that aren't in the
