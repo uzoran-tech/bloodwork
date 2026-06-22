@@ -3339,3 +3339,17 @@ code {
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
+
+/* "NEW" tag on auto-installed (custom) markers in the import review table */
+.new-marker {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #e8eefc;
+  color: #2f405e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  vertical-align: middle;
+}

@@ -4,7 +4,7 @@
 // (decimal commas, "do/od" one-sided ranges, Serbian marker names) but the
 // heuristics are generic. Always show users a preview before saving.
 
-import { MARKERS } from './catalog.js'
+import { MARKERS, makeCustomMarker } from './catalog.js'
 
 export async function extractPdfLines(file) {
   // The legacy build supports several Safari/iOS versions back; the modern
@@ -196,6 +196,33 @@ function findSample(lines) {
   return ''
 }
 
+// Common lab unit tokens — used to tell a result row from prose when the
+// analyte isn't a known marker.
+const UNIT_RE =
+  /(mmol\/l|[µμu]mol\/l|nmol\/l|pmol\/l|mg\/dl|mg\/l|[µμu]g\/l|ng\/ml|ng\/l|pg\/ml|miu\/ml|iu\/ml|iu\/l|mu\/l|u\/l|g\/l|mm\/h|fl\b|\bpg\b|%)/i
+
+function extractUnit(line) {
+  if (/×\s*10|x\s*10\s*\d*\s*\/?\s*l/i.test(line)) return '×10⁹/L'
+  const m = line.match(UNIT_RE)
+  return m ? m[1].replace(/^umol/i, 'µmol').replace(/^ug\//i, 'µg/') : ''
+}
+
+const METHOD_RE = /\b(SPF|ELISA|CMIA|ECLIA|CLIA|ECL|HPLC|ISE|PAP|RIA|EIA|LIA|FPIA|MEIA|IT|calc|turb|neph|Friedewald)\b/gi
+const FLAG_RE = /^[VÂº°*•·\-–]$/
+
+// The analyte name leads the row: keep tokens up to the first standalone
+// number (the measured value), drop leading lab flags and the method column.
+// Token-based so names containing digits (Beta-2, Omega-3) stay intact.
+function extractAnalyteName(line) {
+  const out = []
+  for (const t of line.split(/\s+/)) {
+    if (/^[<>]?\d+([.,]\d+)?$/.test(t)) break
+    out.push(t)
+  }
+  while (out.length && FLAG_RE.test(out[0])) out.shift()
+  return out.join(' ').replace(METHOD_RE, ' ').replace(/[\s\-–:]+$/, '').replace(/\s+/g, ' ').trim()
+}
+
 export function parseLabLines(lines) {
   const date = findReportDate(lines)
   const lab = findLab(lines)
@@ -203,17 +230,32 @@ export function parseLabLines(lines) {
 
   const values = {}
   const ranges = {}
+  const markers = {} // defs for custom (non-catalog) analytes found in this report
   for (const line of lines) {
-    // Skip boilerplate that mentions analyses without carrying results.
-    if (/zabranjeno|referentn|akreditovan|kontrol|umnozavanje|fotokopiranje|konsultovati/i.test(line)) continue
-    const id = matchMarkerInLine(line)
-    if (!id || values[id] != null) continue
+    // Skip boilerplate / sub-lines that mention numbers without being results.
+    if (/zabranjeno|referentn|akreditovan|kontrol|umnozavanje|fotokopiranje|konsultovati|izrazeno|jedinic[ae]|napomena/i.test(line))
+      continue
     const v = extractValue(line)
-    if (v != null) {
+    if (v == null) continue
+    const r = extractRange(line)
+    const id = matchMarkerInLine(line)
+    if (id) {
+      if (values[id] != null) continue
       values[id] = v
-      const r = extractRange(line)
       if (r) ranges[id] = r
+    } else {
+      // Unrecognized analyte: capture it as a custom marker only when the line
+      // looks like a result — it carries a unit or a reference range.
+      const unit = extractUnit(line)
+      if (!unit && !r) continue
+      const name = extractAnalyteName(line)
+      if (name.length < 2 || !/[a-zšđžčćž]/i.test(name)) continue
+      const cm = makeCustomMarker(name, unit)
+      if (values[cm.id] != null) continue
+      values[cm.id] = v
+      if (r) ranges[cm.id] = r
+      markers[cm.id] = { name: cm.name, unit: cm.unit, panel: 'Other' }
     }
   }
-  return { date, values, ranges, lab, sample }
+  return { date, values, ranges, markers, lab, sample }
 }
