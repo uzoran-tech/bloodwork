@@ -167,10 +167,15 @@ export default function AddData({ refresh, done }) {
       const { date: d, values, ranges, lab, sample } = parseLabLines(lines)
       if (Object.keys(values).length > 0) {
         setPreview({ date: d || todayISO(), dateGuess: !d, values, ranges, fileName: f.name || 'photo', source: 'photo', lab, sample })
+      } else if (lines.length === 0) {
+        setFeedback({
+          tone: 'warn',
+          text: 'Could not read any text from that photo. Try a sharper, well-lit photo taken straight-on, with the values filling the frame.',
+        })
       } else {
         setFeedback({
           tone: 'warn',
-          text: 'Could not recognize any marker values in that photo. Try a sharper, well-lit photo taken straight-on, with the values filling the frame.',
+          text: 'Read the photo, but none of its markers are ones BloodTrack tracks yet. You can still add them with manual entry.',
         })
       }
     } catch (err) {
