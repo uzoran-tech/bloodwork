@@ -1,7 +1,10 @@
-// Standalone preview of the redesigned homepage with mock data, so the design
-// can be rendered/screenshotted without the Supabase auth wall. Not shipped.
+// Standalone, interactive preview of the redesigned homepage with mock data,
+// so the design can be clicked through without the Supabase auth wall. Tapping
+// a marker opens its detail sheet, like the real app. Not shipped.
+import { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import Dashboard from './components/Dashboard.jsx'
+import MarkerDetail from './components/MarkerDetail.jsx'
 import './styles.css'
 
 const reports = [
@@ -26,19 +29,35 @@ const reports = [
       urea: 7.7,
       hgb: 150,
     },
-    // The report's own range for urea (3.0–9.2) keeps 7.7 in range.
+    ranges: { urea: { lo: 3, hi: 9.2 } },
+  },
+  {
+    id: 'demo-0',
+    date: '2025-12-02',
+    lab: 'Zavod za laboratorijsku dijagnostiku',
+    sample: 'Serum',
+    notes: '',
+    // An earlier draw so marker detail charts show a trend.
+    values: { tsh: 3.4, vitd: 31, ldl: 4.1, hdl: 1.3, glucose: 5.4, urea: 6.9, hba1c: 5.5 },
     ranges: { urea: { lo: 3, hi: 9.2 } },
   },
 ]
 
-document.documentElement.dataset.theme = 'light'
+function Demo() {
+  const [detailId, setDetailId] = useState(null)
+  return (
+    <div className="app">
+      <main className="main">
+        <div className="view">
+          <Dashboard reports={reports} onOpenMarker={setDetailId} />
+        </div>
+      </main>
+      {detailId && (
+        <MarkerDetail markerId={detailId} reports={reports} onClose={() => setDetailId(null)} />
+      )}
+    </div>
+  )
+}
 
-createRoot(document.getElementById('root')).render(
-  <div className="app">
-    <main className="main">
-      <div className="view">
-        <Dashboard reports={reports} onOpenMarker={() => {}} />
-      </div>
-    </main>
-  </div>
-)
+document.documentElement.dataset.theme = 'light'
+createRoot(document.getElementById('root')).render(<Demo />)
