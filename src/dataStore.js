@@ -51,15 +51,15 @@ export async function saveReport(report) {
     .select('*')
     .single()
 
-  // Older project without the `ranges`/`markers` columns: drop the optional
-  // jsonb columns and retry once so saving still works pre-migration. But if
-  // the report has a brand-new (custom) marker, dropping it would save the
-  // value with no definition — it would appear then vanish — so fail loudly
-  // with an actionable message instead.
+  // Older project without the `ranges`/`markers` columns. Dropping them would
+  // silently lose the report's own reference ranges (so values get judged
+  // against generic catalog defaults) and any new custom markers (which would
+  // appear then vanish). When the report actually carries that data, fail
+  // loudly with an actionable message instead of saving a degraded row.
   if (error && isMissingColumn(error)) {
-    if (Object.keys(row.markers || {}).length > 0) {
+    if (Object.keys(row.ranges || {}).length > 0 || Object.keys(row.markers || {}).length > 0) {
       throw new Error(
-        'This report has a new marker that needs a one-time database update. Run the "markers" column migration from the README, then import again.'
+        'This import needs a one-time database update so the report’s reference ranges (and any new markers) are saved — otherwise values are judged against generic defaults. Run the ranges and markers migrations from the README, then import again.'
       )
     }
     const { ranges, markers, ...rest } = row
