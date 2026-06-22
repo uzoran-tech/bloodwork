@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { seriesFor } from '../store.js'
 import { markerById, statusOf, rangeLabel, refRange, PANEL_ICONS } from '../catalog.js'
+import { removeReading } from '../dataStore.js'
 import { INFO } from '../info.js'
 import { TrendChart } from './Charts.jsx'
-import { IconClose } from './Icons.jsx'
+import { IconClose, IconTrash } from './Icons.jsx'
 
 // Where the latest value sits relative to the reference band, as a bar with a
 // dot — faster to read than comparing numbers. One-sided ranges get a soft
@@ -42,10 +44,28 @@ function sourcesFor(m) {
   ]
 }
 
-export default function MarkerDetail({ markerId, reports, onClose }) {
+export default function MarkerDetail({ markerId, reports, onClose, refresh }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
   const m = markerById(markerId)
   const s = seriesFor(reports, markerId)
   if (!m || s.length === 0) return null
+
+  async function deleteReading(point) {
+    if (!confirm(`Delete the ${point.date} reading for ${m.name}?`)) return
+    setBusy(true)
+    setError(null)
+    try {
+      await removeReading(point.id, markerId)
+      // Last one for this marker — nothing left to show.
+      if (s.length <= 1) onClose()
+      else await refresh()
+    } catch (err) {
+      setError(err?.message || "Couldn't delete that reading.")
+    } finally {
+      setBusy(false)
+    }
+  }
   const latest = s[s.length - 1]
   const values = s.map((p) => p.value)
   const min = Math.min(...values)
@@ -155,23 +175,35 @@ export default function MarkerDetail({ markerId, reports, onClose }) {
         <h3>
           <span className="h3-icon">🗓️</span> History
         </h3>
+        {error && <p className="feedback warn">{error}</p>}
         <table className="history">
           <thead>
             <tr>
               <th>Date</th>
               <th>Value</th>
               <th>Status</th>
+              <th aria-label="Delete"></th>
             </tr>
           </thead>
           <tbody>
             {[...s].reverse().map((p) => (
-              <tr key={p.date}>
+              <tr key={p.id || p.date}>
                 <td>{p.date}</td>
                 <td>
                   {p.value} {m.unit}
                 </td>
                 <td>
                   <span className={`badge ${statusOf(m, p.value, p.range)}`}>{statusOf(m, p.value, p.range)}</span>
+                </td>
+                <td>
+                  <button
+                    className="row-del"
+                    title="Delete this reading"
+                    onClick={() => deleteReading(p)}
+                    disabled={busy}
+                  >
+                    <IconTrash size={15} />
+                  </button>
                 </td>
               </tr>
             ))}

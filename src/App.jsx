@@ -133,7 +133,14 @@ export default function App() {
         )}
       </main>
 
-      {detailId && <MarkerDetail markerId={detailId} reports={reports} onClose={() => setDetailId(null)} />}
+      {detailId && (
+        <MarkerDetail
+          markerId={detailId}
+          reports={reports}
+          onClose={() => setDetailId(null)}
+          refresh={refresh}
+        />
+      )}
 
       <nav className="tabbar">
         {TABS.map(({ id, label, Icon, fab }) => (

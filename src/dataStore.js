@@ -52,8 +52,16 @@ export async function saveReport(report) {
     .single()
 
   // Older project without the `ranges`/`markers` columns: drop the optional
-  // jsonb columns and retry once so saving still works pre-migration.
+  // jsonb columns and retry once so saving still works pre-migration. But if
+  // the report has a brand-new (custom) marker, dropping it would save the
+  // value with no definition — it would appear then vanish — so fail loudly
+  // with an actionable message instead.
   if (error && isMissingColumn(error)) {
+    if (Object.keys(row.markers || {}).length > 0) {
+      throw new Error(
+        'This report has a new marker that needs a one-time database update. Run the "markers" column migration from the README, then import again.'
+      )
+    }
     const { ranges, markers, ...rest } = row
     void ranges
     void markers
@@ -69,6 +77,41 @@ export async function saveReport(report) {
 
 export async function deleteReport(id) {
   const { error } = await supabase.from('reports').delete().eq('id', id)
+  if (error) throw error
+}
+
+// Remove a single marker's reading from one report (its value, range, and any
+// custom def). If that was the report's last value, delete the whole report.
+export async function removeReading(reportId, markerId) {
+  const { data: rep, error: selErr } = await supabase
+    .from('reports')
+    .select('*')
+    .eq('id', reportId)
+    .maybeSingle()
+  if (selErr) throw selErr
+  if (!rep) return
+
+  const values = { ...(rep.values || {}) }
+  const ranges = { ...(rep.ranges || {}) }
+  const markers = { ...(rep.markers || {}) }
+  delete values[markerId]
+  delete ranges[markerId]
+  delete markers[markerId]
+
+  if (Object.keys(values).length === 0) {
+    const { error } = await supabase.from('reports').delete().eq('id', reportId)
+    if (error) throw error
+    return
+  }
+
+  const row = { values, ranges, markers }
+  let { error } = await supabase.from('reports').update(row).eq('id', reportId)
+  if (error && isMissingColumn(error)) {
+    const { ranges: _r, markers: _m, ...rest } = row
+    void _r
+    void _m
+    ;({ error } = await supabase.from('reports').update(rest).eq('id', reportId))
+  }
   if (error) throw error
 }
 

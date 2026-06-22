@@ -22,7 +22,7 @@ export const sortByDate = (reports) => [...reports].sort((a, b) => a.date.locale
 export function seriesFor(reports, markerId) {
   return sortByDate(reports)
     .filter((r) => r.values[markerId] != null)
-    .map((r) => ({ date: r.date, value: r.values[markerId], range: r.ranges?.[markerId] ?? null }))
+    .map((r) => ({ id: r.id, date: r.date, value: r.values[markerId], range: r.ranges?.[markerId] ?? null }))
 }
 
 export function trackedMarkers(reports) {

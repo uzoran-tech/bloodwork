@@ -114,6 +114,11 @@ export function extractRange(line) {
   return null
 }
 
+// Lines that carry numbers but are never analyte results: patient/header
+// metadata and dates. Used to keep them out of the custom-marker capture.
+const NON_RESULT_RE =
+  /datum|ro[dđ]j?en|menstr|uzork|uzimanj|protokol|jlpb|jmbg|izve[sš]taj|prezime|adres|[sš]ifra|godin|\bpol\b|\bstr\b|\btel\b/i
+
 function extractValue(line) {
   let s = line.replace(/(\d),(\d)/g, '$1.$2')
   s = s.replace(/\d{1,2}[./]\d{1,2}[./]\d{2,4}/g, ' ') // dates
@@ -244,12 +249,15 @@ export function parseLabLines(lines) {
       values[id] = v
       if (r) ranges[id] = r
     } else {
-      // Unrecognized analyte: capture it as a custom marker only when the line
-      // looks like a result — it carries a unit or a reference range.
+      // Unrecognized analyte → capture as a custom marker only for a genuine
+      // result row: it must carry a real unit, must not be a date / identifier
+      // / header line, and must have a real word for a name. This keeps birth
+      // and sampling dates (and IDs) from becoming markers.
       const unit = extractUnit(line)
-      if (!unit && !r) continue
+      if (!unit) continue
+      if (DATE_RE.test(line) || NON_RESULT_RE.test(line)) continue
       const name = extractAnalyteName(line)
-      if (name.length < 2 || !/[a-zšđžčćž]/i.test(name)) continue
+      if (!/[a-zšđžčćž]{3,}/i.test(name)) continue
       const cm = makeCustomMarker(name, unit)
       if (values[cm.id] != null) continue
       values[cm.id] = v

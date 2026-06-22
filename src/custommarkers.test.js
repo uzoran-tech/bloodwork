@@ -39,6 +39,28 @@ describe('parseLabLines captures unknown analytes as custom markers', () => {
     expect(Object.keys(markers)).toHaveLength(0)
   })
 
+  it('never turns dates or patient header lines into markers', () => {
+    const { values, markers } = parseLabLines([
+      'Datum rođenja: 1.07.1987',
+      'Dat.posl.menst: 8.04.2026',
+      'Datum i vreme uzimanja uzorka: 10.06.2026 7:08',
+      'Protokol 3206',
+      'Datum rodjenja 1.07 1987', // OCR dropped a separator
+      'Pol: ženski',
+    ])
+    expect(Object.keys(values)).toHaveLength(0)
+    expect(Object.keys(markers)).toHaveLength(0)
+  })
+
+  it('requires a unit, not just a range, to capture a custom marker', () => {
+    // A bare "name number range" with no unit is too ambiguous to auto-add.
+    const noUnit = parseLabLines(['Nešto nepoznato 5 2 - 8'])
+    expect(Object.keys(noUnit.markers)).toHaveLength(0)
+    // With a unit it is captured.
+    const withUnit = parseLabLines(['Nešto nepoznato 5 2 - 8 ng/mL'])
+    expect(Object.values(withUnit.markers)[0]?.name).toBe('Nešto nepoznato')
+  })
+
   it('prefers a real catalog marker over a custom one', () => {
     const { values, markers } = parseLabLines(['V Urea SPF 7,7 3,0 - 9,2 mmol/L'])
     expect(values.urea).toBe(7.7)
