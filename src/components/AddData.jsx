@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { MARKERS, markerById, statusOf } from '../catalog.js'
 import { parseCSV } from '../store.js'
 import { saveReport } from '../dataStore.js'
+import { enrich } from '../aiReconcile.js'
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
@@ -92,9 +93,9 @@ export default function AddData({ refresh, done }) {
       for (const f of files) {
         try {
           const lines = await extractPdfLines(f)
-          const { date: d, values, ranges, markers, lab, sample } = parseLabLines(lines)
+          const { date: d, values, ranges, markers, matchedIds, lab, sample } = await enrich(parseLabLines(lines))
           if (Object.keys(values).length > 0) {
-            previews.push({ date: d || todayISO(), dateGuess: !d, values, ranges, markers, fileName: f.name, lab, sample })
+            previews.push({ date: d || todayISO(), dateGuess: !d, values, ranges, markers, matchedIds, fileName: f.name, lab, sample })
           } else {
             skipped.push(`${f.name} (${lines.length === 0 ? 'no selectable text — a scan or photo' : 'no marker values recognized'})`)
           }
@@ -164,9 +165,9 @@ export default function AddData({ refresh, done }) {
         import('../pdfimport.js'),
       ])
       const lines = await extractPhotoLines(f, setOcrProgress)
-      const { date: d, values, ranges, markers, lab, sample } = parseLabLines(lines)
+      const { date: d, values, ranges, markers, matchedIds, lab, sample } = await enrich(parseLabLines(lines))
       if (Object.keys(values).length > 0) {
-        setPreview({ date: d || todayISO(), dateGuess: !d, values, ranges, markers, fileName: f.name || 'photo', source: 'photo', lab, sample })
+        setPreview({ date: d || todayISO(), dateGuess: !d, values, ranges, markers, matchedIds, fileName: f.name || 'photo', source: 'photo', lab, sample })
       } else if (lines.length === 0) {
         setFeedback({
           tone: 'warn',
@@ -221,6 +222,12 @@ export default function AddData({ refresh, done }) {
             : <>Read from <strong>{preview.fileName}</strong> — uncheck anything that looks wrong.</>}
           {' '}Anything marked <strong>NEW</strong> isn’t in the built-in list yet — saving adds it to your tracked markers.
         </p>
+        {preview.matchedIds?.length > 0 && (
+          <p className="feedback good">
+            ✨ Recognized {preview.matchedIds.length} marker{preview.matchedIds.length === 1 ? '' : 's'} printed under an
+            unfamiliar name and matched {preview.matchedIds.length === 1 ? 'it' : 'them'} automatically — double-check below.
+          </p>
+        )}
         <label className="form-inline">
           Test date
           <input type="date" value={preview.date} onChange={(e) => setPreview({ ...preview, date: e.target.value })} />
