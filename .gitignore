@@ -3,3 +3,8 @@ dist/
 *.log
 .env
 .env*.local
+
+# Local skill tooling (make-interfaces-feel-better install artifacts)
+.agents/
+.claude/
+skills-lock.json

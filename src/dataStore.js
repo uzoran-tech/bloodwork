@@ -15,10 +15,10 @@ export async function listReports() {
   return data ?? []
 }
 
-// True when an error is Postgres complaining about a missing `ranges` column,
-// i.e. the migration hasn't been run. In that case we retry without ranges.
-const isMissingRangesColumn = (error) =>
-  error && (error.code === '42703' || /ranges/i.test(error.message || ''))
+// True when an error is Postgres complaining about a missing column (the
+// `ranges`/`markers` migrations haven't been run). We retry without them.
+const isMissingColumn = (error) =>
+  error && (error.code === '42703' || /column .* does not exist|ranges|markers/i.test(error.message || ''))
 
 // Insert-or-merge by date, preserving mergeReport's "one report per date,
 // combine values, keep existing lab/sample/notes" semantics.
@@ -41,6 +41,7 @@ export async function saveReport(report) {
     notes: merged.notes || '',
     values: merged.values,
     ranges: merged.ranges || {},
+    markers: merged.markers || {},
   }
   if (existing) row.id = existing.id
 
@@ -50,10 +51,12 @@ export async function saveReport(report) {
     .select('*')
     .single()
 
-  // Older project without the `ranges` column: drop it and retry once.
-  if (error && isMissingRangesColumn(error)) {
-    const { ranges, ...rest } = row
+  // Older project without the `ranges`/`markers` columns: drop the optional
+  // jsonb columns and retry once so saving still works pre-migration.
+  if (error && isMissingColumn(error)) {
+    const { ranges, markers, ...rest } = row
     void ranges
+    void markers
     ;({ data, error } = await supabase
       .from('reports')
       .upsert(rest, { onConflict: 'user_id,date' })

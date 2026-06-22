@@ -81,10 +81,15 @@ export default function Dashboard({ reports, onOpenMarker }) {
     return true
   })
 
-  const groups = PANELS.map((panel) => ({
-    panel,
-    items: filtered.filter((r) => r.m.panel === panel),
-  })).filter((g) => g.items.length > 0)
+  // Built-in panel order first, then any custom panels (e.g. "Other") that
+  // auto-installed markers belong to.
+  const extraPanels = [...new Set(rows.map((r) => r.m.panel).filter((p) => !PANELS.includes(p)))]
+  const groups = [...PANELS, ...extraPanels]
+    .map((panel) => ({
+      panel,
+      items: filtered.filter((r) => r.m.panel === panel),
+    }))
+    .filter((g) => g.items.length > 0)
 
   return (
     <div className="home">

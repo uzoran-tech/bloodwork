@@ -168,7 +168,26 @@ export const PANEL_ICONS = {
   Other: '🧫',
 }
 
-export const markerById = (id) => MARKERS.find((m) => m.id === id)
+// Custom markers learned from imported reports — analytes that aren't in the
+// built-in catalog. Registered at runtime (from the user's saved reports) so
+// they resolve and render exactly like built-in markers. They live under the
+// 'Other' panel and carry no catalog range, so status uses the report's range.
+let CUSTOM = []
+export function setCustomMarkers(list) {
+  CUSTOM = Array.isArray(list) ? list : []
+}
+export const customMarkers = () => CUSTOM
+export const allMarkers = () => (CUSTOM.length ? [...MARKERS, ...CUSTOM] : MARKERS)
+
+// Build a custom marker object from a name + optional unit (id is a stable
+// slug so re-imports of the same analyte merge instead of duplicating).
+export function makeCustomMarker(name, unit) {
+  const clean = String(name).replace(/\s+/g, ' ').trim()
+  const slug = 'x_' + clean.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+  return { id: slug, name: clean, unit: unit || '', panel: 'Other', lo: null, hi: null, aliases: [], custom: true }
+}
+
+export const markerById = (id) => MARKERS.find((m) => m.id === id) || CUSTOM.find((m) => m.id === id)
 
 const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '')
 
@@ -176,11 +195,11 @@ const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '')
 export function matchMarker(text) {
   const n = norm(text)
   if (!n) return null
-  for (const m of MARKERS) {
+  for (const m of allMarkers()) {
     if (norm(m.id) === n || norm(m.name) === n) return m.id
     if (m.aliases.some((a) => norm(a) === n)) return m.id
   }
-  for (const m of MARKERS) {
+  for (const m of allMarkers()) {
     if (norm(m.name).includes(n) || m.aliases.some((a) => norm(a).includes(n))) return m.id
   }
   return null

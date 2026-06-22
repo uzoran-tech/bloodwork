@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from './auth.jsx'
 import Auth from './Auth.jsx'
 import { listReports } from './dataStore.js'
+import { setCustomMarkers } from './catalog.js'
 import Dashboard from './components/Dashboard.jsx'
 import Reports from './components/Reports.jsx'
 import AddData from './components/AddData.jsx'
@@ -13,6 +14,20 @@ const TABS = [
   { id: 'add', label: 'Add', Icon: IconPlus, fab: true },
   { id: 'reports', label: 'Reports', Icon: IconReports },
 ]
+
+// Collect the custom-marker defs stored across reports into the catalog
+// registry so they resolve like built-in markers.
+function registerCustomMarkers(reports) {
+  const map = new Map()
+  for (const r of reports) {
+    for (const [id, def] of Object.entries(r.markers || {})) {
+      if (!map.has(id)) {
+        map.set(id, { id, name: def.name, unit: def.unit || '', panel: def.panel || 'Other', lo: null, hi: null, aliases: [], custom: true })
+      }
+    }
+  }
+  setCustomMarkers([...map.values()])
+}
 
 export default function App() {
   const { user, loading, recovering, signOut } = useAuth()
@@ -30,7 +45,11 @@ export default function App() {
   const refresh = useCallback(async () => {
     setDataError(null)
     try {
-      setReports(await listReports())
+      const data = await listReports()
+      // Register any custom (auto-installed) markers BEFORE rendering, so
+      // markerById resolves them everywhere this render pass.
+      registerCustomMarkers(data)
+      setReports(data)
     } catch (err) {
       setDataError(err?.message || 'Could not load your reports.')
     }
@@ -40,6 +59,7 @@ export default function App() {
   useEffect(() => {
     if (!user) {
       setReports([])
+      setCustomMarkers([])
       return
     }
     setDataLoading(true)

@@ -50,6 +50,7 @@ One-time setup:
      notes text not null default '',
      values jsonb not null default '{}'::jsonb,
      ranges jsonb not null default '{}'::jsonb,
+     markers jsonb not null default '{}'::jsonb,
      created_at timestamptz not null default now(),
      unique (user_id, date)
    );
@@ -67,15 +68,20 @@ One-time setup:
    grant select, insert, update, delete on table public.reports to anon, authenticated;
    ```
 
-   **Already created the table before this column existed?** Add it once:
+   **Already created the table before these columns existed?** Add them once:
 
    ```sql
    alter table public.reports add column if not exists ranges jsonb not null default '{}'::jsonb;
+   alter table public.reports add column if not exists markers jsonb not null default '{}'::jsonb;
    ```
 
    `ranges` stores each report's own printed reference range per marker (e.g.
    `{"urea": {"lo": 3.0, "hi": 9.2}}`), so a value is judged against the lab's
-   range rather than a generic default. The app tolerates the column being
+   range rather than a generic default. `markers` stores the definitions of
+   custom markers auto-installed from imports — analytes not in the built-in
+   catalog (e.g. `{"x_koenzim_q10": {"name": "Koenzim Q10", "unit": "µg/L",
+   "panel": "Other"}}`) — so they persist and track like built-in markers. The
+   app tolerates the column being
    absent (it falls back to the catalog range), but interpretation is only
    correct once it's added and reports are re-imported.
 

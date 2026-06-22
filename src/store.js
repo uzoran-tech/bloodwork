@@ -1,4 +1,4 @@
-import { markerById, matchMarker, statusOf, midOf, MARKERS } from './catalog.js'
+import { markerById, matchMarker, statusOf, midOf, allMarkers } from './catalog.js'
 
 const KEY = 'bloodtrack.reports'
 
@@ -28,7 +28,7 @@ export function seriesFor(reports, markerId) {
 export function trackedMarkers(reports) {
   const ids = new Set()
   for (const r of reports) for (const id of Object.keys(r.values)) ids.add(id)
-  return MARKERS.filter((m) => ids.has(m.id))
+  return allMarkers().filter((m) => ids.has(m.id))
 }
 
 // Merge a new report into the list; one report per date (values are combined),
@@ -45,11 +45,12 @@ export function mergeReport(reports, report) {
             notes: report.notes || r.notes,
             values: { ...r.values, ...report.values },
             ranges: { ...(r.ranges || {}), ...(report.ranges || {}) },
+            markers: { ...(r.markers || {}), ...(report.markers || {}) },
           }
         : r
     )
   }
-  return [...reports, { id: `r${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ranges: {}, ...report }]
+  return [...reports, { id: `r${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ranges: {}, markers: {}, ...report }]
 }
 
 // CSV: header optional, rows of "date,marker,value[,unit]". Accepts marker ids,

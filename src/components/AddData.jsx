@@ -92,9 +92,9 @@ export default function AddData({ refresh, done }) {
       for (const f of files) {
         try {
           const lines = await extractPdfLines(f)
-          const { date: d, values, ranges, lab, sample } = parseLabLines(lines)
+          const { date: d, values, ranges, markers, lab, sample } = parseLabLines(lines)
           if (Object.keys(values).length > 0) {
-            previews.push({ date: d || todayISO(), dateGuess: !d, values, ranges, fileName: f.name, lab, sample })
+            previews.push({ date: d || todayISO(), dateGuess: !d, values, ranges, markers, fileName: f.name, lab, sample })
           } else {
             skipped.push(`${f.name} (${lines.length === 0 ? 'no selectable text — a scan or photo' : 'no marker values recognized'})`)
           }
@@ -164,9 +164,9 @@ export default function AddData({ refresh, done }) {
         import('../pdfimport.js'),
       ])
       const lines = await extractPhotoLines(f, setOcrProgress)
-      const { date: d, values, ranges, lab, sample } = parseLabLines(lines)
+      const { date: d, values, ranges, markers, lab, sample } = parseLabLines(lines)
       if (Object.keys(values).length > 0) {
-        setPreview({ date: d || todayISO(), dateGuess: !d, values, ranges, fileName: f.name || 'photo', source: 'photo', lab, sample })
+        setPreview({ date: d || todayISO(), dateGuess: !d, values, ranges, markers, fileName: f.name || 'photo', source: 'photo', lab, sample })
       } else if (lines.length === 0) {
         setFeedback({
           tone: 'warn',
@@ -193,7 +193,7 @@ export default function AddData({ refresh, done }) {
     if (!preview.date) return setFeedback({ tone: 'warn', text: 'Pick the test date first.' })
     setBusy(true)
     try {
-      await saveReport({ date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values, ranges: preview.ranges || {} })
+      await saveReport({ date: preview.date, lab: preview.lab || '', sample: preview.sample || '', notes: `Imported from ${preview.fileName}`, values: preview.values, ranges: preview.ranges || {}, markers: preview.markers || {} })
       await refresh()
       setFeedback({ tone: 'good', text: `Saved ${Object.keys(preview.values).length} values for ${preview.date}.` })
       advancePreview()
@@ -219,6 +219,7 @@ export default function AddData({ refresh, done }) {
           {preview.source === 'photo'
             ? 'Read from your photo with on-device text recognition — OCR can misread decimals, so check each value against the paper. ⚠️ marks values that look implausible.'
             : <>Read from <strong>{preview.fileName}</strong> — uncheck anything that looks wrong.</>}
+          {' '}Anything marked <strong>NEW</strong> isn’t in the built-in list yet — saving adds it to your tracked markers.
         </p>
         <label className="form-inline">
           Test date
@@ -232,8 +233,12 @@ export default function AddData({ refresh, done }) {
         <table className="history preview-table">
           <tbody>
             {entries.map(([id, v]) => {
-              const m = markerById(id)
+              const def = preview.markers?.[id]
+              const m =
+                markerById(id) || (def ? { id, name: def.name, unit: def.unit, lo: null, hi: null } : null)
+              if (!m) return null
               const range = preview.ranges?.[id]
+              const isNew = !markerById(id)
               // Far outside any plausible range — usually OCR losing a decimal
               // separator (2.58 read as 258). Flag it for a second look.
               const suspect = (m.hi != null && v > m.hi * 5) || (m.lo != null && v < m.lo / 5)
@@ -250,7 +255,10 @@ export default function AddData({ refresh, done }) {
                       }}
                     />
                   </td>
-                  <td>{m.name}</td>
+                  <td>
+                    {m.name}
+                    {isNew && <span className="new-marker" title="New marker — will be added to your tracked list">NEW</span>}
+                  </td>
                   <td>
                     {v} {m.unit}
                   </td>
