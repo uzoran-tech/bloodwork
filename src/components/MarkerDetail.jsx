@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { seriesFor } from '../store.js'
 import { markerById, statusOf, rangeLabel, refRange, PANEL_ICONS } from '../catalog.js'
 import { removeReading } from '../dataStore.js'
+import { webLinks } from '../links.js'
 import { INFO } from '../info.js'
 import { TrendChart } from './Charts.jsx'
 import { IconClose, IconTrash } from './Icons.jsx'
@@ -30,18 +31,6 @@ function RangeBar({ m, value, range }) {
       </div>
     </div>
   )
-}
-
-// Reputable health references, Apple Health-style. We don't ship a curated
-// per-marker article set, so these deep-link the marker name into trusted
-// medical sites' search.
-function sourcesFor(m) {
-  const term = encodeURIComponent(m.name.replace(/\s*\(.*?\)\s*/g, ' ').trim())
-  return [
-    { label: 'MedlinePlus', sub: 'U.S. National Library of Medicine', url: `https://medlineplus.gov/search/?query=${term}` },
-    { label: 'Mayo Clinic', sub: 'Tests & procedures', url: `https://www.mayoclinic.org/search/search-results?q=${term}` },
-    { label: 'Cleveland Clinic', sub: 'Health library', url: `https://my.clevelandclinic.org/search?q=${term}` },
-  ]
 }
 
 export default function MarkerDetail({ markerId, reports, onClose, refresh }) {
@@ -157,19 +146,19 @@ export default function MarkerDetail({ markerId, reports, onClose, refresh }) {
             <span className="h3-icon">🔗</span> Learn more on the web
           </h3>
           <ul className="sources">
-            {sourcesFor(m).map((src) => (
+            {webLinks(m).map((src) => (
               <li key={src.url}>
                 <a href={src.url} target="_blank" rel="noopener noreferrer">
                   <span className="src-main">
-                    <strong>{src.label}</strong>
-                    <small>{src.sub}</small>
+                    <strong>{src.title}</strong>
+                    <small>{src.source}</small>
                   </span>
                   <span className="src-arrow">↗</span>
                 </a>
               </li>
             ))}
           </ul>
-          <p className="disclaimer">Opens a trusted health site in your browser.</p>
+          <p className="disclaimer">Opens the article in your browser.</p>
         </div>
 
         <h3>
