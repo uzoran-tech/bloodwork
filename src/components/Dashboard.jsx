@@ -1,14 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { trackedMarkers, seriesFor } from '../store.js'
 import { statusOf, refRange, PANELS, PANEL_ICONS, GROUPS } from '../catalog.js'
-import {
-  IconFlask,
-  IconCheckCircle,
-  IconArrowUp,
-  IconArrowDown,
-  IconInfo,
-  IconSearch,
-} from './Icons.jsx'
+import { IconCheckCircle, IconArrowUp, IconArrowDown, IconInfo, IconSearch } from './Icons.jsx'
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -27,12 +20,63 @@ function refLine(m, range) {
   return 'No reference range'
 }
 
-// One marker row. `label` overrides the displayed name (used by group cards to
-// show the condition, e.g. "Fasting", instead of the full marker name).
+// Eased count-up for dynamic numbers; pairs with tabular-nums so width never
+// shifts. Respects reduced-motion by jumping to target.
+function useCountUp(target, ms = 900) {
+  const [n, setN] = useState(target)
+  const from = useRef(0)
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setN(target)
+      from.current = target
+      return
+    }
+    let raf
+    const start = performance.now()
+    const a = from.current
+    const tick = (t) => {
+      const p = Math.min(1, (t - start) / ms)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setN(Math.round(a + (target - a) * eased))
+      if (p < 1) raf = requestAnimationFrame(tick)
+      else from.current = target
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target, ms])
+  return n
+}
+
+// Focal point: a ring whose arc + centre number animate in once on load.
+function HealthRing({ pct }) {
+  const r = 52
+  const circ = 2 * Math.PI * r
+  const offset = circ * (1 - pct / 100)
+  const shown = useCountUp(pct)
+  const tone = pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'bad'
+  return (
+    <div className={`hring ${tone}`} style={{ '--dash': circ, '--off': offset }}>
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle className="hring-track" cx="60" cy="60" r={r} />
+        <circle className="hring-fill" cx="60" cy="60" r={r} strokeDasharray={circ} strokeDashoffset={offset} />
+      </svg>
+      <div className="hring-center">
+        <strong className="tnum">
+          {shown}
+          <small>%</small>
+        </strong>
+        <span>in range</span>
+      </div>
+    </div>
+  )
+}
+
+// One marker row. `label` overrides the displayed name (group cards show the
+// condition, e.g. "Fasting").
 function MarkerRow({ m, v, date, st, range, onOpen, label: nameLabel, sub }) {
   const { label, Icon } = ST[st]
   return (
-    <button className={`mk-row ${sub ? 'mk-subrow' : ''}`} onClick={() => onOpen(m.id)}>
+    <button className={`mk-row press ${sub ? 'mk-subrow' : ''}`} onClick={() => onOpen(m.id)}>
       <span className="mk-left">
         <span className="mk-name">{nameLabel || m.name}</span>
         <span className="mk-meta">
@@ -43,7 +87,7 @@ function MarkerRow({ m, v, date, st, range, onOpen, label: nameLabel, sub }) {
         </span>
       </span>
       <span className="mk-right">
-        <span className={`mk-value ${st}`}>
+        <span className={`mk-value tnum ${st}`}>
           {v} <small>{m.unit}</small>
         </span>
         <span className="mk-ref">{refLine(m, range)}</span>
@@ -76,7 +120,6 @@ export default function Dashboard({ reports, onOpenMarker }) {
     }
   })()
 
-  // Every marker ever tracked, shown with its most-recent value + date.
   const rows = trackedMarkers(reports).map((m) => {
     const s = seriesFor(reports, m.id)
     const last = s[s.length - 1]
@@ -86,8 +129,10 @@ export default function Dashboard({ reports, onOpenMarker }) {
   const total = rows.length
   const inN = rows.filter((r) => r.st === 'normal').length
   const outN = total - inN
+  const pct = total ? Math.round((inN / total) * 100) : 0
+  const lastDate = rows.reduce((mx, r) => (r.date > mx ? r.date : mx), '')
 
-  // A marker group becomes one card only when 2+ of its members are tracked.
+  // A group becomes one card only when 2+ of its members are tracked.
   const groupCounts = {}
   for (const r of rows) if (r.m.group) groupCounts[r.m.group] = (groupCounts[r.m.group] || 0) + 1
   const isGrouped = (m) => m.group && groupCounts[m.group] >= 2
@@ -97,14 +142,12 @@ export default function Dashboard({ reports, onOpenMarker }) {
     if (status === 'in' && r.st !== 'normal') return false
     if (status === 'out' && r.st === 'normal') return false
     if (q) {
-      const groupName = isGrouped(r.m) ? GROUPS[r.m.group]?.name || '' : ''
-      if (!r.m.name.toLowerCase().includes(q) && !groupName.toLowerCase().includes(q)) return false
+      const gn = isGrouped(r.m) ? GROUPS[r.m.group]?.name || '' : ''
+      if (!r.m.name.toLowerCase().includes(q) && !gn.toLowerCase().includes(q)) return false
     }
     return true
   })
 
-  // Assemble a panel's rows into render items, collapsing grouped markers into
-  // a single group card while keeping their order of first appearance.
   function panelItems(panel) {
     const items = []
     const seen = new Map()
@@ -125,8 +168,6 @@ export default function Dashboard({ reports, onOpenMarker }) {
     return items
   }
 
-  // Built-in panel order first, then any custom panels (e.g. "Other") that
-  // auto-installed markers belong to.
   const extraPanels = [...new Set(rows.map((r) => r.m.panel).filter((p) => !PANELS.includes(p)))]
   const groups = [...PANELS, ...extraPanels]
     .map((panel) => {
@@ -136,99 +177,79 @@ export default function Dashboard({ reports, onOpenMarker }) {
     })
     .filter((g) => g.items.length > 0)
 
+  const legend = [
+    { key: 'all', label: 'All', n: total, cls: '' },
+    { key: 'in', label: 'In range', n: inN, cls: 'green' },
+    { key: 'out', label: 'Out of range', n: outN, cls: 'red' },
+  ]
+
   return (
-    <div className="home">
-      <div className="home-top">
+    <div className="home v2">
+      <header className="home-top enter" style={{ '--i': 0 }}>
         <div className="home-avatar">{name[0].toUpperCase()}</div>
         <div className="home-greet">
           <h1 className="home-title">Hello, {name}</h1>
-          <p className="home-sub">All your tracked markers</p>
+          <p className="home-sub">{lastDate ? `Last drawn ${fmtDate(lastDate)}` : 'All your tracked markers'}</p>
         </div>
+      </header>
+
+      <section className="health-hero enter" style={{ '--i': 1 }} aria-label="Markers in range">
+        <HealthRing pct={pct} />
+        <div className="hero-legend" role="group" aria-label="Filter by status">
+          {legend.map((it) => (
+            <button
+              key={it.key}
+              className={`legend-row press ${status === it.key ? 'active' : ''}`}
+              onClick={() => setStatus(it.key)}
+            >
+              <span className={`legend-dot ${it.cls}`} />
+              <span className="legend-label">{it.label}</span>
+              <span className={`legend-n tnum ${it.cls}`}>{it.n}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="search-bar enter" style={{ '--i': 2 }}>
+        <IconSearch size={18} />
+        <input
+          type="search"
+          placeholder="Search markers"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
       </div>
 
-      <div className="report-sheet">
-        <div className="sheet-summary">
-          <div className="stat-summary" role="group" aria-label="Filter by status">
-            <button
-              className={`stat-col all ${status === 'all' ? 'active' : ''}`}
-              onClick={() => setStatus('all')}
-            >
-              <span className="stat-ic blue">
-                <IconFlask size={18} />
+      {groups.length === 0 ? (
+        <p className="mk-empty enter" style={{ '--i': 3 }}>
+          No markers match.
+        </p>
+      ) : (
+        groups.map((g, gi) => (
+          <div className="result-group enter" key={g.panel} style={{ '--i': gi + 3 }}>
+            <div className="group-head">
+              <span className="group-title">
+                <span className="group-ico">{PANEL_ICONS[g.panel]}</span> {g.panel}
               </span>
-              <span className="stat-tx">
-                <small>Markers</small>
-                <strong>{total}</strong>
-              </span>
-            </button>
-            <button
-              className={`stat-col in ${status === 'in' ? 'active' : ''}`}
-              onClick={() => setStatus('in')}
-            >
-              <span className="stat-ic green">
-                <IconCheckCircle size={18} />
-              </span>
-              <span className="stat-tx">
-                <small>In range</small>
-                <strong className="green">{inN}</strong>
-              </span>
-            </button>
-            <button
-              className={`stat-col out ${status === 'out' ? 'active' : ''}`}
-              onClick={() => setStatus('out')}
-            >
-              <span className="stat-ic red">
-                <IconArrowUp size={18} />
-              </span>
-              <span className="stat-tx">
-                <small>Out of range</small>
-                <strong className="red">{outN}</strong>
-              </span>
-            </button>
-          </div>
-
-          <div className="controls">
-            <div className="search-bar">
-              <IconSearch size={18} />
-              <input
-                type="search"
-                placeholder="Search markers"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+              <span className="group-count tnum">{g.count}</span>
             </div>
+            {g.items.map((it) =>
+              it.type === 'group' ? (
+                <MarkerGroup key={it.key} name={it.name} members={it.members} onOpen={onOpenMarker} />
+              ) : (
+                <MarkerRow key={it.key} {...it.row} onOpen={onOpenMarker} />
+              )
+            )}
           </div>
-        </div>
+        ))
+      )}
 
-        {groups.length === 0 ? (
-          <p className="mk-empty">No markers match.</p>
-        ) : (
-          groups.map((g) => (
-            <div className="result-group" key={g.panel}>
-              <div className="group-head">
-                <span className="group-title">
-                  <span className="group-ico">{PANEL_ICONS[g.panel]}</span> {g.panel}
-                </span>
-                <span className="group-count">{g.count}</span>
-              </div>
-              {g.items.map((it) =>
-                it.type === 'group' ? (
-                  <MarkerGroup key={it.key} name={it.name} members={it.members} onOpen={onOpenMarker} />
-                ) : (
-                  <MarkerRow key={it.key} {...it.row} onOpen={onOpenMarker} />
-                )
-              )}
-            </div>
-          ))
-        )}
-
-        <div className="sheet-note">
-          <IconInfo size={16} />
-          <span>
-            Each marker shows its most recent result and the date it was drawn. Reference intervals
-            are general adult values; interpret results with your doctor — not medical advice.
-          </span>
-        </div>
+      <div className="sheet-note enter" style={{ '--i': groups.length + 4 }}>
+        <IconInfo size={16} />
+        <span>
+          Each marker shows its most recent result against the range on that report. Interpret results
+          with your doctor — not medical advice.
+        </span>
       </div>
     </div>
   )
