@@ -13,6 +13,28 @@ import { markerById, statusOf, refRange } from './catalog.js'
 
 const SEV_ORDER = { alert: 0, watch: 1, info: 2, good: 3 }
 
+// How much a finding should rise to the top. impact = base(kind) × clinical
+// weight (× recency tiebreak). Patterns outrank the singles they explain, and
+// those singles are suppressed once a pattern claims them.
+const BASE = { pattern: 3.3, alert: 3.0, watch: 2.0, info: 1.2, good: 0.9 }
+// Clinical weight by body system — seeded here, to be reviewed by a clinician
+// before any real launch. Higher = more worth surfacing first.
+const PANEL_WEIGHT = {
+  'Liver & Kidney': 1.0,
+  Cardiac: 1.0,
+  Metabolic: 0.95,
+  Lipids: 0.9,
+  'Tumor Markers': 0.9,
+  Hormones: 0.85,
+  'Blood Count': 0.8,
+  Coagulation: 0.8,
+  Inflammation: 0.7,
+  Electrolytes: 0.6,
+  'Vitamins & Minerals': 0.55,
+  Other: 0.4,
+}
+const weightOf = (m) => PANEL_WEIGHT[m?.panel] ?? 0.5
+
 const fmtMonth = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 const pct = (a, b) => (b === 0 ? null : ((a - b) / Math.abs(b)) * 100)
 const r1 = (n) => (Math.abs(n) >= 100 ? Math.round(n) : Math.round(n * 10) / 10)
@@ -55,7 +77,7 @@ function markerInsights(m, series) {
   const span = a.n > 1 ? `${fmtMonth(a.first.date)}–${fmtMonth(a.latest.date)}` : fmtMonth(a.latest.date)
 
   if (a.prev && a.prevSt === 'normal' && a.st !== 'normal') {
-    out.push({ key: `cross-${m.id}`, severity: 'alert', tier: 'free', icon: '⚠️', title: `${m.name} just moved out of range`, detail: `Now ${a.latest.value} ${m.unit} (${a.st === 'high' ? 'above' : 'below'} range), from ${a.prev.value} on ${fmtMonth(a.prev.date)}. Worth raising with your doctor.`, markerIds: [m.id], date: a.latest.date })
+    out.push({ key: `cross-${m.id}`, severity: 'alert', tier: 'free', icon: '⚠️', title: `${m.name} just moved out of range`, detail: `Now ${a.latest.value} ${m.unit} (${a.st === 'high' ? 'above' : 'below'} range), from ${a.prev.value} on ${fmtMonth(a.prev.date)}. Worth raising with your doctor.`, markerIds: [m.id], date: a.latest.date, trend: 1.15 })
   } else if (a.st !== 'normal') {
     out.push({ key: `oor-${m.id}`, severity: 'alert', tier: 'free', icon: '⚠️', title: `${m.name} is ${a.st === 'high' ? 'high' : 'low'}`, detail: `Latest ${a.latest.value} ${m.unit}, ${a.st === 'high' ? 'above' : 'below'} the reference range.`, markerIds: [m.id], date: a.latest.date })
   }
@@ -65,16 +87,17 @@ function markerInsights(m, series) {
   }
 
   if (a.st === 'normal' && a.approaching) {
-    out.push({ key: `near-${m.id}`, severity: 'watch', tier: 'premium', icon: '📈', title: `${m.name} is creeping toward the ${a.approaching === 'high' ? 'upper' : 'lower'} limit`, detail: `Now ${a.latest.value} ${m.unit}, trending ${a.approaching === 'high' ? 'up' : 'down'}. Still in range — but the kind of slow drift that's easy to miss.`, markerIds: [m.id], date: a.latest.date })
+    out.push({ key: `near-${m.id}`, severity: 'watch', tier: 'premium', icon: '📈', title: `${m.name} is creeping toward the ${a.approaching === 'high' ? 'upper' : 'lower'} limit`, detail: `Now ${a.latest.value} ${m.unit}, trending ${a.approaching === 'high' ? 'up' : 'down'}. Still in range — but the kind of slow drift that's easy to miss.`, markerIds: [m.id], date: a.latest.date, trend: 1.1 })
   }
 
   if (a.monoUp >= 3 || a.monoDown >= 3) {
     const rising = a.monoUp >= 3
-    out.push({ key: `drift-${m.id}`, severity: 'watch', tier: 'premium', icon: rising ? '↗️' : '↘️', title: `${m.name} has ${rising ? 'risen' : 'fallen'} ${rising ? a.monoUp : a.monoDown} tests in a row`, detail: `${a.first.value} → ${a.latest.value} ${m.unit} over ${span}. A consistent direction is worth a look.`, markerIds: [m.id], date: a.latest.date })
+    out.push({ key: `drift-${m.id}`, severity: 'watch', tier: 'premium', icon: rising ? '↗️' : '↘️', title: `${m.name} has ${rising ? 'risen' : 'fallen'} ${rising ? a.monoUp : a.monoDown} tests in a row`, detail: `${a.first.value} → ${a.latest.value} ${m.unit} over ${span}. A consistent direction is worth a look.`, markerIds: [m.id], date: a.latest.date, trend: 1.1 })
   } else if (a.changeFirst != null && Math.abs(a.changeFirst) >= 25 && a.n >= 2) {
     const up = a.changeFirst > 0
     out.push({ key: `chg-${m.id}`, severity: 'info', tier: 'premium', icon: up ? '↗️' : '↘️', title: `${m.name} ${up ? 'up' : 'down'} ${Math.abs(r1(a.changeFirst))}% since ${fmtMonth(a.first.date)}`, detail: `${a.first.value} → ${a.latest.value} ${m.unit}.`, markerIds: [m.id], date: a.latest.date })
   }
+  for (const i of out) i.weight = weightOf(m)
   return out
 }
 
@@ -137,17 +160,51 @@ function patterns(reports) {
     out.push({ key: 'pat-liver', severity: 'watch', tier: 'premium', icon: '🫄', title: 'Liver enzymes are elevated', detail: `More than one liver enzyme is above range. Often diet, alcohol or medication related — but persistent elevation deserves a check.`, markerIds: ids(alt, ast, ggt), date: (alt || ast || ggt).date })
   }
 
+  // Patterns always outrank the singles they explain. Weight the few we have by
+  // how directly the pattern points at something actionable.
+  const PATTERN_WEIGHT = {
+    'pat-ir': 1.0, 'pat-kidney': 1.0, 'pat-lipid': 1.0,
+    'pat-liver': 0.9, 'pat-thyroid': 0.9, 'pat-iron': 0.8,
+  }
+  for (const i of out) {
+    i.pattern = true
+    i.weight = PATTERN_WEIGHT[i.key] ?? 0.9
+  }
   return out
 }
 
 export function buildInsightReport(reports) {
+  const pats = patterns(reports)
+
+  // A pattern already interprets its member markers, so suppress those markers'
+  // standalone alerts/watches — surface the interpretation, not five echoes of
+  // it. "Good news" (back-in-range) is never suppressed; it's always welcome.
+  const claimed = new Set()
+  for (const p of pats) for (const id of p.markerIds || []) claimed.add(id)
+
   const perMarker = []
   for (const m of trackedMarkers(reports)) {
     const s = seriesFor(reports, m.id)
     if (s.length) perMarker.push(...markerInsights(m, s))
   }
-  const all = [...patterns(reports), ...perMarker]
-  all.sort((a, b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity] || new Date(b.date || 0) - new Date(a.date || 0))
+  const singles = perMarker.filter(
+    (i) => i.severity === 'good' || !(i.markerIds || []).some((id) => claimed.has(id)),
+  )
+
+  const all = [...pats, ...singles]
+
+  // impact = base(kind) × clinical weight × trajectory × recency. Newest report
+  // gets full recency; older findings decay gently so a fresh shift outranks a
+  // year-old one of the same kind.
+  const newest = Math.max(0, ...all.map((i) => new Date(i.date || 0).getTime()))
+  for (const i of all) {
+    const ageMonths = newest ? (newest - new Date(i.date || 0).getTime()) / (1000 * 60 * 60 * 24 * 30) : 0
+    const recency = ageMonths <= 6 ? 1 : Math.max(0.6, 1 - (ageMonths - 6) * 0.03)
+    const base = BASE[i.pattern ? 'pattern' : i.severity] ?? 1
+    i.impact = base * (i.weight ?? 0.5) * (i.trend ?? 1) * recency
+  }
+
+  all.sort((a, b) => b.impact - a.impact || new Date(b.date || 0) - new Date(a.date || 0))
   return all
 }
 

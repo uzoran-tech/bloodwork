@@ -3,12 +3,7 @@ import { markerById } from '../catalog.js'
 import { buildInsightReport, visitSummary } from '../insights.js'
 import { IconInfo } from './Icons.jsx'
 
-const SECTIONS = [
-  { sev: 'alert', title: 'Needs attention', tone: 'alert' },
-  { sev: 'watch', title: 'Worth watching', tone: 'watch' },
-  { sev: 'info', title: 'Trends', tone: 'info' },
-  { sev: 'good', title: 'Good news', tone: 'good' },
-]
+const TOP_N = 5
 
 function InsightCard({ i, onOpenMarker }) {
   return (
@@ -38,6 +33,7 @@ function InsightCard({ i, onOpenMarker }) {
 export default function Insights({ reports, onOpenMarker }) {
   const insights = useMemo(() => buildInsightReport(reports), [reports])
   const [copied, setCopied] = useState(false)
+  const [showAll, setShowAll] = useState(false)
 
   const alerts = insights.filter((i) => i.severity === 'alert').length
   const watch = insights.filter((i) => i.severity === 'watch').length
@@ -55,6 +51,31 @@ export default function Insights({ reports, onOpenMarker }) {
   }
 
   const empty = insights.length === 0
+
+  // The full list ranked by impact — the "dive deeper" sub-page.
+  if (!empty && showAll) {
+    return (
+      <div className="insights-screen">
+        <header className="ins-hero">
+          <button className="ins-back" onClick={() => setShowAll(false)}>← Back</button>
+          <h1>All findings</h1>
+          <p className="ins-sub">Everything BloodTrack spotted, most impactful first.</p>
+        </header>
+        <section className="ins-list">
+          {insights.map((i) => (
+            <InsightCard key={i.key} i={i} onOpenMarker={onOpenMarker} />
+          ))}
+        </section>
+        <p className="ins-disclaimer">
+          <IconInfo size={14} /> BloodTrack highlights trends to discuss with your doctor. It is not a
+          diagnosis and not medical advice.
+        </p>
+      </div>
+    )
+  }
+
+  const top = insights.slice(0, TOP_N)
+  const rest = insights.length - top.length
 
   return (
     <div className="insights-screen">
@@ -97,18 +118,25 @@ export default function Insights({ reports, onOpenMarker }) {
             </span>
           </button>
 
-          {SECTIONS.map(({ sev, title, tone }) => {
-            const items = insights.filter((i) => i.severity === sev)
-            if (items.length === 0) return null
-            return (
-              <section className="ins-section" key={sev}>
-                <h2 className={`ins-sec-title ${tone}`}>{title}</h2>
-                {items.map((i) => (
-                  <InsightCard key={i.key} i={i} onOpenMarker={onOpenMarker} />
-                ))}
-              </section>
-            )
-          })}
+          <p className="ins-lead">
+            {alerts || watch
+              ? 'What’s most worth your attention right now'
+              : 'A few trends worth keeping an eye on'}
+          </p>
+
+          <section className="ins-list">
+            {top.map((i) => (
+              <InsightCard key={i.key} i={i} onOpenMarker={onOpenMarker} />
+            ))}
+          </section>
+
+          {rest > 0 ? (
+            <button className="ins-seeall" onClick={() => setShowAll(true)}>
+              See all {insights.length} findings →
+            </button>
+          ) : (
+            <p className="ins-steady">Everything else looks steady across your tracked markers.</p>
+          )}
         </>
       )}
 

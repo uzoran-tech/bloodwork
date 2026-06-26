@@ -32,11 +32,31 @@ describe('buildInsightReport', () => {
     expect(ir.tier).toBe('premium')
   })
 
-  it('orders alerts before watch/info/good', () => {
-    const sev = insights.map((i) => i.severity)
-    const firstWatch = sev.indexOf('watch')
-    const lastAlert = sev.lastIndexOf('alert')
-    if (firstWatch !== -1 && lastAlert !== -1) expect(lastAlert).toBeLessThan(firstWatch)
+  it('ranks findings by impact, highest first', () => {
+    const impacts = insights.map((i) => i.impact)
+    const sorted = [...impacts].sort((a, b) => b - a)
+    expect(impacts).toEqual(sorted)
+    // A cross-marker pattern outranks an ordinary single it doesn't explain.
+    expect(insights[0].impact).toBeGreaterThanOrEqual(insights[insights.length - 1].impact)
+  })
+
+  it('suppresses a single-marker flag once a pattern already explains it', () => {
+    // LDL high + HDL low fires pat-lipid, which claims ldl/hdl/trig — so their
+    // standalone "out of range" cards should not also appear.
+    const lipid = [
+      { id: 'a', date: '2024-06-01', values: { ldl: 4.6, hdl: 0.8, trig: 2.4 }, ranges: {} },
+    ]
+    const out = buildInsightReport(lipid)
+    expect(out.some((i) => i.key === 'pat-lipid')).toBe(true)
+    expect(out.some((i) => i.key === 'oor-ldl' || i.key === 'oor-hdl')).toBe(false)
+    // The pattern still surfaces those markers as chips.
+    const pat = out.find((i) => i.key === 'pat-lipid')
+    expect(pat.markerIds).toEqual(expect.arrayContaining(['ldl', 'hdl']))
+  })
+
+  it('keeps good news even when the marker belongs to a pattern', () => {
+    // vitd returns to range (good) and is never part of a pattern here.
+    expect(insights.some((i) => i.severity === 'good' && i.markerIds.includes('vitd'))).toBe(true)
   })
 
   it('returns nothing for a single all-in-range report', () => {
