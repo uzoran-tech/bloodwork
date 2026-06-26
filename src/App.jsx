@@ -6,11 +6,13 @@ import { setCustomMarkers } from './catalog.js'
 import Dashboard from './components/Dashboard.jsx'
 import Reports from './components/Reports.jsx'
 import AddData from './components/AddData.jsx'
+import Insights from './components/Insights.jsx'
 import MarkerDetail from './components/MarkerDetail.jsx'
-import { IconPulse, IconReports, IconPlus, IconDrop } from './components/Icons.jsx'
+import { IconPulse, IconReports, IconPlus, IconDrop, IconTrend } from './components/Icons.jsx'
 
 const TABS = [
   { id: 'dashboard', label: 'Overview', Icon: IconPulse },
+  { id: 'insights', label: 'Insights', Icon: IconTrend },
   { id: 'add', label: 'Add', Icon: IconPlus, fab: true },
   { id: 'reports', label: 'Reports', Icon: IconReports },
 ]
@@ -118,6 +120,7 @@ export default function App() {
         ) : (
           <div className="view" key={tab}>
             {tab === 'dashboard' && <Dashboard reports={reports} onOpenMarker={setDetailId} />}
+            {tab === 'insights' && <Insights reports={reports} onOpenMarker={setDetailId} />}
             {tab === 'reports' && (
               <Reports
                 reports={reports}
